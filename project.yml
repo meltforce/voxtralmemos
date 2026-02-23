@@ -27,7 +27,8 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: com.meltforce.voxtralmemos
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: "VoxtralMemos needs microphone access to record voice memos."
+        INFOPLIST_KEY_CFBundleDisplayName: "Voxtral Memos"
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Voxtral Memos needs microphone access to record voice memos."
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
         INFOPLIST_KEY_UILaunchScreen_Generation: true

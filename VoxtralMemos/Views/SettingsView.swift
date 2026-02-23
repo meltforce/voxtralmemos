@@ -10,10 +10,11 @@ struct SettingsView: View {
     @State private var isValidating = false
     @State private var validationResult: Bool?
     @State private var selectedModel: String = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
-    @State private var selectedTranscriptionModel: String = UserDefaults.standard.string(forKey: "transcriptionModel") ?? "voxtral-mini-latest"
+    @State private var selectedTranscriptionModel: String = MistralDirectService.resolvedTranscriptionModel
     @State private var selectedLanguage: String = UserDefaults.standard.string(forKey: "transcriptionLanguage") ?? "auto"
     @State private var availableModels: [MistralModel] = []
     @State private var availableTranscriptionModels: [MistralModel] = []
+    @State private var isLoadingModels = false
     @State private var showDeleteConfirmation = false
     @State private var showTemplates = false
     @State private var storageInfo: (fileCount: Int, totalSize: String) = (0, "0 MB")
@@ -80,42 +81,65 @@ struct SettingsView: View {
 
                 // Transcription Model
                 Section {
-                    Picker("Transcription Model", selection: $selectedTranscriptionModel) {
-                        ForEach(availableTranscriptionModels) { model in
-                            Text(model.id)
-                                .tag(model.id)
+                    if availableTranscriptionModels.count > 1 {
+                        Picker("Model", selection: $selectedTranscriptionModel) {
+                            ForEach(availableTranscriptionModels) { model in
+                                Text(model.displayName).tag(model.id)
+                            }
                         }
-                        if availableTranscriptionModels.isEmpty {
-                            Text(selectedTranscriptionModel).tag(selectedTranscriptionModel)
+                        .onChange(of: selectedTranscriptionModel) { _, newValue in
+                            UserDefaults.standard.set(newValue, forKey: "transcriptionModel")
+                        }
+                    } else {
+                        HStack {
+                            Text("Model")
+                            Spacer()
+                            let display = availableTranscriptionModels.first?.displayName
+                                ?? MistralModel(id: selectedTranscriptionModel, name: "", capabilities: []).displayName
+                            Text(display)
+                                .foregroundStyle(.secondary)
                         }
                     }
-                    .onChange(of: selectedTranscriptionModel) { _, newValue in
-                        UserDefaults.standard.set(newValue, forKey: "transcriptionModel")
+
+                    Button {
+                        Task { await refreshModels() }
+                    } label: {
+                        HStack {
+                            Text("Refresh Models")
+                            Spacer()
+                            if isLoadingModels {
+                                ProgressView().controlSize(.small)
+                            } else {
+                                Image(systemName: "arrow.clockwise")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                     }
+                    .disabled(isLoadingModels || apiKey.isEmpty)
                 } header: {
-                    Text("Transcription Model")
+                    Text("Transcription")
                 } footer: {
-                    Text("Used for speech-to-text. $0.003/min.")
+                    Text("Speech-to-text · $0.003/min")
                 }
 
                 // Summarization Model
                 Section {
-                    Picker("Chat Model", selection: $selectedModel) {
+                    Picker("Model", selection: $selectedModel) {
                         ForEach(availableModels) { model in
-                            Text(model.id)
-                                .tag(model.id)
+                            Text(model.displayName).tag(model.id)
                         }
                         if availableModels.isEmpty {
-                            Text(selectedModel).tag(selectedModel)
+                            Text(MistralModel(id: selectedModel, name: "", capabilities: []).displayName)
+                                .tag(selectedModel)
                         }
                     }
                     .onChange(of: selectedModel) { _, newValue in
                         UserDefaults.standard.set(newValue, forKey: "selectedModel")
                     }
                 } header: {
-                    Text("Summarization Model")
+                    Text("Summarization")
                 } footer: {
-                    Text("Used for summaries, translations, and other transformations. Pricing as of Feb 2025.")
+                    Text("Used for summaries, translations, and other transformations.")
                 }
 
                 // Language
@@ -222,6 +246,8 @@ struct SettingsView: View {
     }
 
     private func loadModels() async {
+        isLoadingModels = true
+        defer { isLoadingModels = false }
         let service = MistralDirectService(keychainService: keychainService)
         do {
             async let chat = service.listModels()
@@ -231,6 +257,10 @@ struct SettingsView: View {
         } catch {
             // Keep empty, user can still use defaults
         }
+    }
+
+    private func refreshModels() async {
+        await loadModels()
     }
 
     private func calculateStorage() {

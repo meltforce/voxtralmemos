@@ -1,6 +1,18 @@
 import Foundation
 
 public final class MistralDirectService: TranscriptionService, @unchecked Sendable {
+    public static let defaultTranscriptionModel = "voxtral-mini-transcribe-26-02"
+
+    /// Returns the stored transcription model if it looks like a valid transcription model ID,
+    /// otherwise falls back to the default.
+    public static var resolvedTranscriptionModel: String {
+        if let stored = UserDefaults.standard.string(forKey: "transcriptionModel"),
+           stored.contains("transcribe") {
+            return stored
+        }
+        return defaultTranscriptionModel
+    }
+
     private let keychainService: KeychainService
 
     public init(keychainService: KeychainService = KeychainService()) {
@@ -18,7 +30,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     // MARK: - Transcription
 
-    public func transcribe(audioFileURL: URL, language: String?, model: String = "voxtral-mini-latest") async throws -> TranscriptionResult {
+    public func transcribe(audioFileURL: URL, language: String?, model: String = "voxtral-mini-transcribe-26-02") async throws -> TranscriptionResult {
         let key = try apiKey
         let url = URL(string: "https://api.mistral.ai/v1/audio/transcriptions")!
         let boundary = UUID().uuidString
@@ -118,7 +130,15 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
         let decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
         let models = decoded.data
-            .filter { $0.capabilities?.completionChat == true && $0.id.hasSuffix("-latest") }
+            .filter {
+                $0.capabilities?.completionChat == true
+                && $0.id.hasSuffix("-latest")
+                && !$0.id.contains("pixtral")
+                && !$0.id.contains("vibe")
+                && !$0.id.contains("voxtral")
+                && !$0.id.contains("embed")
+                && !$0.id.contains("moderation")
+            }
             .map { MistralModel(id: $0.id, name: $0.id, capabilities: ["chat"]) }
         let unique = Dictionary(grouping: models, by: \.id).compactMap(\.value.first)
         return unique.sorted { $0.id < $1.id }
@@ -141,7 +161,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
         let decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
         let models = decoded.data
-            .filter { $0.id.contains("voxtral") && $0.id.hasSuffix("-latest") }
+            .filter { $0.id.contains("voxtral") && $0.id.contains("transcribe") && !$0.id.contains("realtime") }
             .map { MistralModel(id: $0.id, name: $0.id, capabilities: ["transcription"]) }
         let unique = Dictionary(grouping: models, by: \.id).compactMap(\.value.first)
         return unique.sorted { $0.id < $1.id }

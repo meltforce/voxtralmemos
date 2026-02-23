@@ -34,6 +34,17 @@ public final class AudioPlayerService: NSObject, ObservableObject, AVAudioPlayer
         }
     }
 
+    public func resume() {
+        audioPlayer?.play()
+        isPlaying = true
+        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                self.currentTime = self.audioPlayer?.currentTime ?? 0
+            }
+        }
+    }
+
     public func pause() {
         audioPlayer?.pause()
         isPlaying = false

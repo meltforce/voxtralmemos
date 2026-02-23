@@ -20,6 +20,23 @@ public struct MistralModel: Identifiable, Sendable {
         self.name = name
         self.capabilities = capabilities
     }
+
+    /// Short display name: "voxtral-mini-transcribe-26-02" → "Voxtral Mini Transcribe v26.02"
+    public var displayName: String {
+        var parts = id.split(separator: "-").map(String.init)
+
+        // Detect trailing version segments (e.g. ["26","02"] or ["25","07"])
+        var versionParts: [String] = []
+        while let last = parts.last, last.allSatisfy(\.isNumber) {
+            versionParts.insert(parts.removeLast(), at: 0)
+        }
+
+        let base = parts.map { $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " ")
+        if versionParts.isEmpty {
+            return base
+        }
+        return "\(base) v\(versionParts.joined(separator: "."))"
+    }
 }
 
 public protocol TranscriptionService: Sendable {

@@ -36,9 +36,11 @@ struct MemoDetailView: View {
             if showTabs {
                 HStack(spacing: 0) {
                     TabButton(title: "Transcript", isSelected: selectedTab == 0) {
+                        UISelectionFeedbackGenerator().selectionChanged()
                         withAnimation(.easeInOut(duration: 0.2)) { selectedTab = 0 }
                     }
                     TabButton(title: primaryTabName, isSelected: selectedTab == 1) {
+                        UISelectionFeedbackGenerator().selectionChanged()
                         withAnimation(.easeInOut(duration: 0.2)) { selectedTab = 1 }
                     }
                 }
@@ -97,15 +99,7 @@ struct MemoDetailView: View {
             }
 
             ToolbarItemGroup(placement: .bottomBar) {
-                Button {
-                    togglePlayback()
-                } label: {
-                    VStack(spacing: 2) {
-                        Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                        Text(player.isPlaying ? "Pause" : "Play")
-                            .font(.caption2)
-                    }
-                }
+                PlaybackBarView(player: player, audioFileURL: memo.audioFileURL)
 
                 Spacer()
 
@@ -119,8 +113,6 @@ struct MemoDetailView: View {
                     }
                 }
                 .disabled(currentContent == nil)
-
-                Spacer()
 
                 ShareLink(item: currentContent ?? "") {
                     VStack(spacing: 2) {
@@ -151,8 +143,27 @@ struct MemoDetailView: View {
                     .foregroundStyle(.secondary)
             }
         } else if memo.status == .failed {
-            Label(memo.errorMessage ?? "Transcription failed", systemImage: "exclamationmark.triangle")
-                .foregroundStyle(.red)
+            VStack(alignment: .leading, spacing: 12) {
+                Label("Transcription Failed", systemImage: "exclamationmark.triangle.fill")
+                    .font(.headline)
+                    .foregroundStyle(.red)
+
+                if let msg = memo.errorMessage {
+                    Text(msg)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button("Retry Transcription", systemImage: "arrow.clockwise") {
+                    retryTranscription()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.teal)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.red.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
         } else if let transcript = memo.transcript {
             Text(transcript)
                 .font(.body)
@@ -207,14 +218,43 @@ struct MemoDetailView: View {
 
     // MARK: - Actions
 
+    private var hasLoadedAudio: Bool {
+        player.duration > 0
+    }
+
     private func togglePlayback() {
         if player.isPlaying {
             player.pause()
+        } else if hasLoadedAudio {
+            player.resume()
         } else {
             do {
                 try player.play(url: memo.audioFileURL)
             } catch {
                 print("Playback error: \(error)")
+            }
+        }
+    }
+
+    private func retryTranscription() {
+        memo.status = .transcribing
+        memo.errorMessage = nil
+        try? modelContext.save()
+
+        Task {
+            let service = MistralDirectService()
+            do {
+                let result = try await service.transcribe(audioFileURL: memo.audioFileURL, language: UserDefaults.standard.string(forKey: "transcriptionLanguage"), model: MistralDirectService.resolvedTranscriptionModel)
+                memo.transcript = result.text
+                memo.language = result.language
+                memo.status = .ready
+                try? modelContext.save()
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+            } catch {
+                memo.status = .failed
+                memo.errorMessage = error.localizedDescription
+                try? modelContext.save()
+                UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
         }
     }
@@ -270,6 +310,75 @@ private struct TabButton: View {
         }
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct PlaybackBarView: View {
+    @ObservedObject var player: AudioPlayerService
+    let audioFileURL: URL
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Button {
+                player.seek(to: max(0, player.currentTime - 15))
+            } label: {
+                Image(systemName: "gobackward.15")
+                    .font(.body)
+            }
+
+            Button {
+                togglePlayback()
+            } label: {
+                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title3)
+            }
+
+            Button {
+                player.seek(to: min(player.duration, player.currentTime + 15))
+            } label: {
+                Image(systemName: "goforward.15")
+                    .font(.body)
+            }
+
+            Text(formatTime(player.currentTime))
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 38, alignment: .trailing)
+
+            Slider(
+                value: Binding(
+                    get: { player.currentTime },
+                    set: { player.seek(to: $0) }
+                ),
+                in: 0...(max(player.duration, 1))
+            )
+            .tint(.teal)
+
+            Text(formatTime(player.duration))
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 38, alignment: .leading)
+        }
+    }
+
+    private func togglePlayback() {
+        if player.isPlaying {
+            player.pause()
+        } else if player.duration > 0 {
+            player.resume()
+        } else {
+            do {
+                try player.play(url: audioFileURL)
+            } catch {
+                print("Playback error: \(error)")
+            }
+        }
+    }
+
+    private func formatTime(_ time: TimeInterval) -> String {
+        let minutes = Int(time) / 60
+        let seconds = Int(time) % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }
 

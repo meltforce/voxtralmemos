@@ -13,38 +13,44 @@ struct MemoListView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
-                List {
-                    ForEach(groupedMemos, id: \.0) { section in
-                        Section(section.0) {
-                            ForEach(section.1) { memo in
-                                NavigationLink(value: memo.id) {
-                                    MemoRowView(memo: memo)
+                if memos.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Memos Yet", systemImage: "mic.badge.plus")
+                            .foregroundStyle(.teal)
+                    } description: {
+                        Text("Tap Record to capture your first voice memo.")
+                    }
+                } else {
+                    List {
+                        ForEach(groupedMemos, id: \.0) { section in
+                            Section(section.0) {
+                                ForEach(section.1) { memo in
+                                    NavigationLink(value: memo.id) {
+                                        MemoRowView(memo: memo)
+                                    }
+                                    .swipeActions(edge: .leading) {
+                                        if memo.status == .failed {
+                                            Button {
+                                                retryMemo(memo)
+                                            } label: {
+                                                Label("Retry", systemImage: "arrow.clockwise")
+                                            }
+                                            .tint(.teal)
+                                        }
+                                    }
+                                }
+                                .onDelete { indexSet in
+                                    deleteMemos(from: section.1, at: indexSet)
                                 }
                             }
-                            .onDelete { indexSet in
-                                deleteMemos(from: section.1, at: indexSet)
-                            }
                         }
-                    }
 
-                    // Bottom spacer so list content isn't hidden behind recording bar
-                    Color.clear.frame(height: 80)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                }
-                .listStyle(.plain)
-                .navigationTitle("Memos")
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button { showSettings = true } label: {
-                            Image(systemName: "gearshape")
-                        }
+                        // Bottom spacer so list content isn't hidden behind recording bar
+                        Color.clear.frame(height: 80)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
                     }
-                }
-                .navigationDestination(for: UUID.self) { memoId in
-                    if let memo = memos.first(where: { $0.id == memoId }) {
-                        MemoDetailView(memo: memo)
-                    }
+                    .listStyle(.plain)
                 }
 
                 // Recording bar
@@ -52,6 +58,19 @@ struct MemoListView: View {
                     startRecording()
                 } onStop: {
                     stopRecording()
+                }
+            }
+            .navigationTitle("Memos")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape")
+                    }
+                }
+            }
+            .navigationDestination(for: UUID.self) { memoId in
+                if let memo = memos.first(where: { $0.id == memoId }) {
+                    MemoDetailView(memo: memo)
                 }
             }
             .sheet(isPresented: $showSettings) {
@@ -87,6 +106,7 @@ struct MemoListView: View {
     }
 
     private func startRecording() {
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         let fileName = "\(UUID().uuidString).m4a"
         currentRecordingFileName = fileName
         let fileURL = Memo.audioDirectory.appendingPathComponent(fileName)
@@ -98,6 +118,7 @@ struct MemoListView: View {
     }
 
     private func stopRecording() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         guard let fileName = currentRecordingFileName else { return }
         let duration = recorder.stopRecording()
         currentRecordingFileName = nil
@@ -116,15 +137,24 @@ struct MemoListView: View {
         }
     }
 
+    private func retryMemo(_ memo: Memo) {
+        memo.status = .transcribing
+        memo.errorMessage = nil
+        try? modelContext.save()
+        Task {
+            await transcribeMemo(memo)
+        }
+    }
+
     private func transcribeMemo(_ memo: Memo) async {
         let service = MistralDirectService()
         do {
-            let transcriptionModel = UserDefaults.standard.string(forKey: "transcriptionModel") ?? "voxtral-mini-latest"
-            let result = try await service.transcribe(audioFileURL: memo.audioFileURL, language: UserDefaults.standard.string(forKey: "transcriptionLanguage"), model: transcriptionModel)
+            let result = try await service.transcribe(audioFileURL: memo.audioFileURL, language: UserDefaults.standard.string(forKey: "transcriptionLanguage"), model: MistralDirectService.resolvedTranscriptionModel)
             memo.transcript = result.text
             memo.language = result.language
             memo.status = .ready
             try? modelContext.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
 
             // Auto-run templates
             await runDefaultAction(for: memo)
@@ -132,6 +162,7 @@ struct MemoListView: View {
             memo.status = .failed
             memo.errorMessage = error.localizedDescription
             try? modelContext.save()
+            UINotificationFeedbackGenerator().notificationOccurred(.error)
         }
     }
 
@@ -210,6 +241,19 @@ struct MemoRowView: View {
                         .foregroundStyle(.red)
                         .font(.caption)
                 }
+            }
+
+            if memo.status == .failed, let msg = memo.errorMessage {
+                Text(msg)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+                    .lineLimit(1)
+            }
+
+            if memo.status == .failed {
+                Text("Swipe right to retry")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 4)
