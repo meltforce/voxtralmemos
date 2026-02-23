@@ -1,0 +1,23 @@
+# Xcode
+*.xcodeproj
+*.xcworkspace
+DerivedData/
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+*.swiftpm
+Package.resolved
+
+# IDE
+.swiftpm/
+.idea/
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Misc
+input/

@@ -1,0 +1,36 @@
+name: VoxtralMemos
+options:
+  bundleIdPrefix: com.meltforce
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    DEVELOPMENT_TEAM: ""
+
+packages:
+  VoxtralCore:
+    path: VoxtralCore
+
+targets:
+  VoxtralMemos:
+    type: application
+    platform: iOS
+    sources:
+      - VoxtralMemos
+    dependencies:
+      - package: VoxtralCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.meltforce.voxtralmemos
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "VoxtralMemos needs microphone access to record voice memos."
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+        CODE_SIGN_ENTITLEMENTS: VoxtralMemos/VoxtralMemos.entitlements
