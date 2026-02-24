@@ -21,7 +21,6 @@ struct SettingsView: View {
     @State private var availableTranscriptionModels: [MistralModel] = []
     @State private var isLoadingModels = false
     @State private var showDeleteConfirmation = false
-    @State private var showDeleteAudioConfirmation = false
     @State private var showTemplates = false
     @State private var storageInfo: (fileCount: Int, totalSize: String) = (0, "0 MB")
     @State private var defaultActionTemplateId: String = UserDefaults.standard.string(forKey: "defaultActionTemplateId") ?? ""
@@ -201,34 +200,12 @@ struct SettingsView: View {
                     }
                 }
 
-                // Local Storage
-                Section("Local Storage") {
-                    HStack {
-                        Text("Audio Files")
-                        Spacer()
-                        Text("\(storageInfo.fileCount)")
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack {
-                        Text("Storage Used")
-                        Spacer()
-                        Text(storageInfo.totalSize)
-                            .foregroundStyle(.secondary)
-                    }
-                    Button("Delete Audio Files", role: .destructive) {
-                        showDeleteAudioConfirmation = true
-                    }
-                }
-
                 // Support the Developer
                 Section("Support the Developer") {
                     NavigationLink {
                         TipJarView()
                     } label: {
                         Label("Tip Jar", systemImage: "heart.fill")
-                    }
-                    Link(destination: Self.mistralPricingURL) {
-                        Label("Mistral Pricing", systemImage: "creditcard")
                     }
                 }
 
@@ -250,9 +227,24 @@ struct SettingsView: View {
                     Link(destination: Self.termsURL) {
                         Label("Terms of Use", systemImage: "doc.text")
                     }
+                    Link(destination: Self.mistralPricingURL) {
+                        Label("Mistral API Pricing", systemImage: "arrow.up.right.square")
+                    }
+                    HStack {
+                        Text("Audio Files")
+                        Spacer()
+                        Text("\(storageInfo.fileCount)")
+                            .foregroundStyle(.secondary)
+                    }
+                    HStack {
+                        Text("Storage Used")
+                        Spacer()
+                        Text(storageInfo.totalSize)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
-                // Danger Zone
+                // Delete All Data
                 Section {
                     Button("Delete All Data", role: .destructive) {
                         showDeleteConfirmation = true
@@ -287,13 +279,6 @@ struct SettingsView: View {
                 }
             } message: {
                 Text("This will permanently delete all memos, audio files, and transformations. This cannot be undone.")
-            }
-            .confirmationDialog("Delete Audio Files?", isPresented: $showDeleteAudioConfirmation, titleVisibility: .visible) {
-                Button("Delete Audio Files", role: .destructive) {
-                    deleteAudioFiles()
-                }
-            } message: {
-                Text("This will delete all audio recordings but keep your memos and transcripts. This cannot be undone.")
             }
             .task {
                 apiKey = keychainService.getAPIKey() ?? ""
@@ -354,20 +339,6 @@ struct SettingsView: View {
         formatter.allowedUnits = [.useMB, .useKB]
         formatter.countStyle = .file
         storageInfo = (files.count, formatter.string(fromByteCount: totalBytes))
-    }
-
-    private func deleteAudioFiles() {
-        let audioDir = Memo.audioDirectory
-        if let files = try? FileManager.default.contentsOfDirectory(at: audioDir, includingPropertiesForKeys: nil) {
-            for file in files {
-                do {
-                    try FileManager.default.removeItem(at: file)
-                } catch {
-                    logger.error("Failed to delete audio file \(file.lastPathComponent): \(error.localizedDescription)")
-                }
-            }
-        }
-        calculateStorage()
     }
 
     private func deleteAllData() {
