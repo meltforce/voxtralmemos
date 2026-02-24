@@ -14,9 +14,12 @@ struct OnboardingView: View {
         VStack(spacing: 32) {
             Spacer()
 
-            Image(systemName: "waveform.circle.fill")
-                .font(.system(size: 80))
-                .foregroundStyle(.teal)
+            if let icon = UIImage(named: "AppIcon60x60") {
+                Image(uiImage: icon)
+                    .resizable()
+                    .frame(width: 120, height: 120)
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            }
 
             VStack(spacing: 8) {
                 Text("Voxtral Memos")

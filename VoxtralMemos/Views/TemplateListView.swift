@@ -45,7 +45,7 @@ struct TemplateListView: View {
             }
             .onDelete(perform: deleteTemplates)
         }
-        .navigationTitle("Templates")
+        .navigationTitle("Prompts")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {

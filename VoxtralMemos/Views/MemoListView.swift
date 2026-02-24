@@ -6,6 +6,7 @@ struct MemoListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Memo.createdAt, order: .reverse) private var memos: [Memo]
     @StateObject private var recorder = AudioRecorderService()
+    @State private var searchText = ""
     @State private var showSettings = false
     @State private var permissionGranted = false
     @State private var currentRecordingFileName: String?
@@ -20,6 +21,8 @@ struct MemoListView: View {
                     } description: {
                         Text("Tap Record to capture your first voice memo.")
                     }
+                } else if filteredMemos.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
                 } else {
                     List {
                         ForEach(groupedMemos, id: \.0) { section in
@@ -81,15 +84,23 @@ struct MemoListView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
+            .searchable(text: $searchText, prompt: "Search memos")
             .task {
                 permissionGranted = await AudioRecorderService.requestPermission()
             }
         }
     }
 
+    private var filteredMemos: [Memo] {
+        guard !searchText.isEmpty else { return memos }
+        return memos.filter {
+            $0.transcript?.localizedCaseInsensitiveContains(searchText) == true
+        }
+    }
+
     private var groupedMemos: [(String, [Memo])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: memos) { memo -> String in
+        let grouped = Dictionary(grouping: filteredMemos) { memo -> String in
             if calendar.isDateInToday(memo.createdAt) {
                 return "Today"
             } else if calendar.isDateInYesterday(memo.createdAt) {

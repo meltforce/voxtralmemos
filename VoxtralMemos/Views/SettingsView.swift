@@ -164,6 +164,11 @@ struct SettingsView: View {
                     }
                     .onChange(of: defaultActionTemplateId) { _, newValue in
                         UserDefaults.standard.set(newValue, forKey: "defaultActionTemplateId")
+                        // Sync isAutoRun flags on templates
+                        for template in allTemplates {
+                            template.isAutoRun = (template.id.uuidString == newValue)
+                        }
+                        try? modelContext.save()
                     }
                 } header: {
                     Text("After Transcription")
@@ -172,8 +177,8 @@ struct SettingsView: View {
                 }
 
                 // Templates
-                Section("Prompt Templates") {
-                    NavigationLink("Manage Templates") {
+                Section("Prompts") {
+                    NavigationLink("Manage Prompts") {
                         TemplateListView()
                     }
                 }

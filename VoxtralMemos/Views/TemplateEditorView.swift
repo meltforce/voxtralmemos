@@ -104,11 +104,13 @@ struct TemplateEditorView: View {
     }
 
     private func save() {
+        let savedTemplate: PromptTemplate
         if let template {
             template.name = name
             template.icon = icon
             template.systemPrompt = systemPrompt
             template.isAutoRun = isAutoRun
+            savedTemplate = template
         } else {
             let newTemplate = PromptTemplate(
                 name: name,
@@ -119,7 +121,22 @@ struct TemplateEditorView: View {
                 sortOrder: 100
             )
             modelContext.insert(newTemplate)
+            savedTemplate = newTemplate
         }
+
+        // Enforce single auto-run: sync isAutoRun with defaultActionTemplateId
+        if isAutoRun {
+            let descriptor = FetchDescriptor<PromptTemplate>()
+            if let all = try? modelContext.fetch(descriptor) {
+                for other in all where other.id != savedTemplate.id {
+                    other.isAutoRun = false
+                }
+            }
+            UserDefaults.standard.set(savedTemplate.id.uuidString, forKey: "defaultActionTemplateId")
+        } else if UserDefaults.standard.string(forKey: "defaultActionTemplateId") == savedTemplate.id.uuidString {
+            UserDefaults.standard.set("", forKey: "defaultActionTemplateId")
+        }
+
         try? modelContext.save()
         dismiss()
     }
