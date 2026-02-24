@@ -87,14 +87,6 @@ struct TipJarView: View {
         .task {
             await loadProducts()
         }
-        .task {
-            for await result in Transaction.updates {
-                if let transaction = try? result.payloadValue {
-                    await transaction.finish()
-                    showThankYou = true
-                }
-            }
-        }
         .alert("Thank You!", isPresented: $showThankYou) {
             Button("OK") {}
         } message: {

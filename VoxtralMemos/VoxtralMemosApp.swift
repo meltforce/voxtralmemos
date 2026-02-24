@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 import VoxtralCore
 
 @main
@@ -28,11 +29,20 @@ struct VoxtralMemosApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if let container {
-                ContentView()
-                    .modelContainer(container)
-            } else {
-                DatabaseErrorView(errorMessage: containerError ?? "Unknown error")
+            Group {
+                if let container {
+                    ContentView()
+                        .modelContainer(container)
+                } else {
+                    DatabaseErrorView(errorMessage: containerError ?? "Unknown error")
+                }
+            }
+            .task {
+                for await result in Transaction.updates {
+                    if let transaction = try? result.payloadValue {
+                        await transaction.finish()
+                    }
+                }
             }
         }
     }
