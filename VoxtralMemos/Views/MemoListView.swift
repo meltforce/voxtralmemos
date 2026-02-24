@@ -95,6 +95,7 @@ struct MemoListView: View {
         guard !searchText.isEmpty else { return memos }
         return memos.filter {
             $0.transcript?.localizedCaseInsensitiveContains(searchText) == true
+            || $0.formattedDate.localizedCaseInsensitiveContains(searchText)
         }
     }
 
