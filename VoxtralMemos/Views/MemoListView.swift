@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import VoxtralCore
+import os
+
+private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "MemoList")
 
 struct MemoListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -10,6 +13,7 @@ struct MemoListView: View {
     @State private var showSettings = false
     @State private var permissionGranted = false
     @State private var currentRecordingFileName: String?
+    @State private var recordingError: String?
 
     var body: some View {
         NavigationStack {
@@ -74,6 +78,7 @@ struct MemoListView: View {
                     Button { showSettings = true } label: {
                         Image(systemName: "gearshape")
                     }
+                    .accessibilityLabel("Settings")
                 }
             }
             .navigationDestination(for: UUID.self) { memoId in
@@ -87,6 +92,19 @@ struct MemoListView: View {
             .searchable(text: $searchText, prompt: "Search memos")
             .task {
                 permissionGranted = await AudioRecorderService.requestPermission()
+            }
+            .onChange(of: recorder.didAutoStop) { _, didAutoStop in
+                if didAutoStop {
+                    handleAutoStop()
+                }
+            }
+            .alert("Recording Error", isPresented: Binding(
+                get: { recordingError != nil },
+                set: { if !$0 { recordingError = nil } }
+            )) {
+                Button("OK") { recordingError = nil }
+            } message: {
+                Text(recordingError ?? "An unknown error occurred.")
             }
         }
     }
@@ -130,7 +148,30 @@ struct MemoListView: View {
         do {
             try recorder.startRecording(to: fileURL)
         } catch {
-            print("Failed to start recording: \(error)")
+            currentRecordingFileName = nil
+            recordingError = error.localizedDescription
+        }
+    }
+
+    private func handleAutoStop() {
+        guard let fileName = currentRecordingFileName else { return }
+        currentRecordingFileName = nil
+        recorder.didAutoStop = false
+
+        let duration = recorder.elapsedTime > 0 ? recorder.elapsedTime : 29 * 60 + 50
+
+        let memo = Memo(
+            duration: duration,
+            audioFileName: fileName,
+            status: .transcribing
+        )
+        modelContext.insert(memo)
+        modelContext.loggedSave()
+
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+
+        Task {
+            await transcribeMemo(memo)
         }
     }
 
@@ -146,7 +187,7 @@ struct MemoListView: View {
             status: .transcribing
         )
         modelContext.insert(memo)
-        try? modelContext.save()
+        modelContext.loggedSave()
 
         // Start transcription
         Task {
@@ -157,7 +198,7 @@ struct MemoListView: View {
     private func retryMemo(_ memo: Memo) {
         memo.status = .transcribing
         memo.errorMessage = nil
-        try? modelContext.save()
+        modelContext.loggedSave()
         Task {
             await transcribeMemo(memo)
         }
@@ -170,7 +211,7 @@ struct MemoListView: View {
             memo.transcript = result.text
             memo.language = result.language
             memo.status = .ready
-            try? modelContext.save()
+            modelContext.loggedSave()
             UINotificationFeedbackGenerator().notificationOccurred(.success)
 
             // Auto-run templates
@@ -178,7 +219,7 @@ struct MemoListView: View {
         } catch {
             memo.status = .failed
             memo.errorMessage = error.localizedDescription
-            try? modelContext.save()
+            modelContext.loggedSave()
             UINotificationFeedbackGenerator().notificationOccurred(.error)
         }
     }
@@ -197,7 +238,7 @@ struct MemoListView: View {
         if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
             // Cache hit — just mark it as the active one
             cached.selectedAt = Date()
-            try? modelContext.save()
+            modelContext.loggedSave()
             return
         }
 
@@ -210,7 +251,7 @@ struct MemoListView: View {
             template: template
         )
         modelContext.insert(transformation)
-        try? modelContext.save()
+        modelContext.loggedSave()
 
         let service = MistralDirectService()
         do {
@@ -225,17 +266,21 @@ struct MemoListView: View {
             transformation.status = .failed
             transformation.errorMessage = error.localizedDescription
         }
-        try? modelContext.save()
+        modelContext.loggedSave()
     }
 
     private func deleteMemos(from sectionMemos: [Memo], at offsets: IndexSet) {
         for index in offsets {
             let memo = sectionMemos[index]
             // Delete audio file
-            try? FileManager.default.removeItem(at: memo.audioFileURL)
+            do {
+                try FileManager.default.removeItem(at: memo.audioFileURL)
+            } catch {
+                logger.error("Failed to delete audio file: \(error.localizedDescription)")
+            }
             modelContext.delete(memo)
         }
-        try? modelContext.save()
+        modelContext.loggedSave()
     }
 }
 

@@ -88,7 +88,7 @@ struct TemplateEditorView: View {
             Button("Delete", role: .destructive) {
                 if let template {
                     modelContext.delete(template)
-                    try? modelContext.save()
+                    modelContext.loggedSave()
                 }
                 dismiss()
             }
@@ -137,7 +137,7 @@ struct TemplateEditorView: View {
             UserDefaults.standard.set("", forKey: "defaultActionTemplateId")
         }
 
-        try? modelContext.save()
+        modelContext.loggedSave()
         dismiss()
     }
 
@@ -149,7 +149,7 @@ struct TemplateEditorView: View {
             systemPrompt = builtin.prompt
             icon = builtin.icon
             isAutoRun = builtin.autoRun
-            try? modelContext.save()
+            modelContext.loggedSave()
         }
     }
 }

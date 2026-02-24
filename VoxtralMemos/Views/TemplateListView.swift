@@ -74,6 +74,6 @@ struct TemplateListView: View {
                 modelContext.delete(template)
             }
         }
-        try? modelContext.save()
+        modelContext.loggedSave()
     }
 }

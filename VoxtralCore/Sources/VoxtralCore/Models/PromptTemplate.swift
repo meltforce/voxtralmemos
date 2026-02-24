@@ -1,5 +1,8 @@
 import Foundation
 import SwiftData
+import os
+
+private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "PromptTemplate")
 
 @Model
 public final class PromptTemplate {
@@ -74,6 +77,10 @@ public final class PromptTemplate {
             )
             context.insert(t)
         }
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            logger.error("Failed to seed built-in templates: \(error.localizedDescription)")
+        }
     }
 }

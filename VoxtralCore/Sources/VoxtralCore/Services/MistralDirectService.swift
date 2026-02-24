@@ -3,6 +3,11 @@ import Foundation
 public final class MistralDirectService: TranscriptionService, @unchecked Sendable {
     public static let defaultTranscriptionModel = "voxtral-mini-latest"
 
+    // MARK: - URL Constants
+    private static let transcriptionURL = URL(string: "https://api.mistral.ai/v1/audio/transcriptions")!
+    private static let chatURL = URL(string: "https://api.mistral.ai/v1/chat/completions")!
+    private static let modelsURL = URL(string: "https://api.mistral.ai/v1/models")!
+
     /// Returns the stored transcription model if it looks like a valid transcription model ID,
     /// otherwise falls back to the default.
     public static var resolvedTranscriptionModel: String {
@@ -33,10 +38,9 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     public func transcribe(audioFileURL: URL, language: String?, model: String = "voxtral-mini-latest") async throws -> TranscriptionResult {
         let key = try apiKey
-        let url = URL(string: "https://api.mistral.ai/v1/audio/transcriptions")!
         let boundary = UUID().uuidString
 
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.transcriptionURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -80,9 +84,8 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     public func runPrompt(transcript: String, systemPrompt: String, model: String) async throws -> String {
         let key = try apiKey
-        let url = URL(string: "https://api.mistral.ai/v1/chat/completions")!
 
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.chatURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -118,9 +121,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     public func listModels() async throws -> [MistralModel] {
         let key = try apiKey
-        let url = URL(string: "https://api.mistral.ai/v1/models")!
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -149,9 +150,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     public func listTranscriptionModels() async throws -> [MistralModel] {
         let key = try apiKey
-        let url = URL(string: "https://api.mistral.ai/v1/models")!
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -176,9 +175,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     public func validateAPIKey() async throws -> Bool {
         let key = try apiKey
-        let url = URL(string: "https://api.mistral.ai/v1/models")!
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
         let (_, response) = try await URLSession.shared.data(for: request)

@@ -2,6 +2,8 @@ import SwiftUI
 import VoxtralCore
 
 struct OnboardingView: View {
+    private static let mistralConsoleURL = URL(string: "https://console.mistral.ai/api-keys/")!
+
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var apiKey = ""
     @State private var isValidating = false
@@ -44,7 +46,7 @@ struct OnboardingView: View {
                         .textContentType(.password)
                 }
 
-                Link(destination: URL(string: "https://console.mistral.ai/api-keys/")!) {
+                Link(destination: Self.mistralConsoleURL) {
                     HStack {
                         Image(systemName: "key")
                         Text("Get your API key from Mistral")
@@ -84,6 +86,8 @@ struct OnboardingView: View {
     private func validateAndContinue() {
         isValidating = true
         errorMessage = nil
+
+        // Save temporarily for the validation request, revert on failure
         keychainService.saveAPIKey(apiKey)
 
         Task {
@@ -93,9 +97,11 @@ struct OnboardingView: View {
                 if valid {
                     hasCompletedOnboarding = true
                 } else {
+                    keychainService.saveAPIKey("")
                     errorMessage = "Invalid API key. Please check and try again."
                 }
             } catch {
+                keychainService.saveAPIKey("")
                 errorMessage = error.localizedDescription
             }
             isValidating = false

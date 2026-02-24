@@ -61,7 +61,10 @@ public final class Memo {
     }
 
     public static var audioDirectory: URL {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        guard let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            // documentDirectory is always available on iOS; this is a defensive fallback
+            return URL.temporaryDirectory.appendingPathComponent("audio", isDirectory: true)
+        }
         let audioDir = docs.appendingPathComponent("audio", isDirectory: true)
         try? FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
         return audioDir

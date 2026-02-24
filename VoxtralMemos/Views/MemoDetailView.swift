@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import VoxtralCore
+import os
+
+private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "MemoDetail")
 
 struct MemoDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -11,6 +14,7 @@ struct MemoDetailView: View {
     @State private var showDeleteConfirmation = false
     @State private var selectedTab = 0
     @State private var copyConfirmed = false
+    @State private var playbackError: String?
 
     /// The most recently selected transformation is shown in the second tab
     private var primaryTransformation: MemoTransformation? {
@@ -98,7 +102,7 @@ struct MemoDetailView: View {
             .padding(.vertical, 8)
 
             // Playback bar with waveform
-            PlaybackBarView(player: player, audioFileURL: memo.audioFileURL)
+            PlaybackBarView(player: player, audioFileURL: memo.audioFileURL, playbackError: $playbackError)
         }
         .navigationTitle("Memo")
         .navigationBarTitleDisplayMode(.inline)
@@ -120,6 +124,7 @@ struct MemoDetailView: View {
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
+                .accessibilityLabel("More options")
                 .disabled(memo.transcript == nil)
             }
         }
@@ -131,6 +136,14 @@ struct MemoDetailView: View {
         }
         .onDisappear {
             player.stop()
+        }
+        .alert("Playback Error", isPresented: Binding(
+            get: { playbackError != nil },
+            set: { if !$0 { playbackError = nil } }
+        )) {
+            Button("OK") { playbackError = nil }
+        } message: {
+            Text(playbackError ?? "Could not play audio.")
         }
     }
 
@@ -233,7 +246,7 @@ struct MemoDetailView: View {
             do {
                 try player.play(url: memo.audioFileURL)
             } catch {
-                print("Playback error: \(error)")
+                playbackError = error.localizedDescription
             }
         }
     }
@@ -246,7 +259,7 @@ struct MemoDetailView: View {
 
         memo.status = .transcribing
         memo.errorMessage = nil
-        try? modelContext.save()
+        modelContext.loggedSave()
 
         Task {
             let service = MistralDirectService()
@@ -255,12 +268,12 @@ struct MemoDetailView: View {
                 memo.transcript = result.text
                 memo.language = result.language
                 memo.status = .ready
-                try? modelContext.save()
+                modelContext.loggedSave()
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             } catch {
                 memo.status = .failed
                 memo.errorMessage = error.localizedDescription
-                try? modelContext.save()
+                modelContext.loggedSave()
                 UINotificationFeedbackGenerator().notificationOccurred(.error)
             }
         }
@@ -290,7 +303,7 @@ struct MemoDetailView: View {
             template: template
         )
         modelContext.insert(fresh)
-        try? modelContext.save()
+        modelContext.loggedSave()
 
         Task {
             let service = MistralDirectService()
@@ -306,14 +319,18 @@ struct MemoDetailView: View {
                 fresh.status = .failed
                 fresh.errorMessage = error.localizedDescription
             }
-            try? modelContext.save()
+            modelContext.loggedSave()
         }
     }
 
     private func deleteMemo() {
-        try? FileManager.default.removeItem(at: memo.audioFileURL)
+        do {
+            try FileManager.default.removeItem(at: memo.audioFileURL)
+        } catch {
+            logger.error("Failed to delete audio file: \(error.localizedDescription)")
+        }
         modelContext.delete(memo)
-        try? modelContext.save()
+        modelContext.loggedSave()
         dismiss()
     }
 
@@ -347,6 +364,7 @@ private struct TabButton: View {
 private struct PlaybackBarView: View {
     @ObservedObject var player: AudioPlayerService
     let audioFileURL: URL
+    @Binding var playbackError: String?
 
     @State private var waveformSamples: [Float] = []
     private let barCount = 60
@@ -447,7 +465,7 @@ private struct PlaybackBarView: View {
             do {
                 try player.play(url: audioFileURL)
             } catch {
-                print("Playback error: \(error)")
+                playbackError = error.localizedDescription
             }
         }
     }
@@ -506,7 +524,7 @@ struct TemplatePickerSheet: View {
         if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
             // Cache hit — just mark it as the active one
             cached.selectedAt = Date()
-            try? modelContext.save()
+            modelContext.loggedSave()
             return
         }
 
@@ -519,7 +537,7 @@ struct TemplatePickerSheet: View {
             template: template
         )
         modelContext.insert(transformation)
-        try? modelContext.save()
+        modelContext.loggedSave()
 
         Task {
             let service = MistralDirectService()
@@ -535,7 +553,7 @@ struct TemplatePickerSheet: View {
                 transformation.status = .failed
                 transformation.errorMessage = error.localizedDescription
             }
-            try? modelContext.save()
+            modelContext.loggedSave()
         }
     }
 }

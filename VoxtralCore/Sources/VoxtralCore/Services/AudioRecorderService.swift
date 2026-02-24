@@ -9,12 +9,19 @@ public final class AudioRecorderService: NSObject, ObservableObject {
     @Published public var elapsedTime: TimeInterval = 0
     @Published public var currentLevel: Float = 0
     @Published public var levelSamples: [Float] = []
+    @Published public var isApproachingLimit = false
+    @Published public var didAutoStop = false
 
     private var audioRecorder: AVAudioRecorder?
     private var timer: Timer?
     private var startTime: Date?
     private var pausedElapsed: TimeInterval = 0
     private let maxSamples = 30
+
+    /// Warning threshold (25 minutes)
+    private static let warningThreshold: TimeInterval = 25 * 60
+    /// Hard stop threshold (29 minutes 50 seconds)
+    private static let hardStopThreshold: TimeInterval = 29 * 60 + 50
 
     public override init() {
         super.init()
@@ -37,6 +44,8 @@ public final class AudioRecorderService: NSObject, ObservableObject {
         audioRecorder?.record()
 
         isRecording = true
+        isApproachingLimit = false
+        didAutoStop = false
         startTime = Date()
         elapsedTime = 0
 
@@ -47,6 +56,16 @@ public final class AudioRecorderService: NSObject, ObservableObject {
             Task { @MainActor in
                 guard let self, let startTime = self.startTime else { return }
                 self.elapsedTime = Date().timeIntervalSince(startTime)
+
+                // Duration limit checks
+                if self.elapsedTime >= Self.hardStopThreshold {
+                    self.didAutoStop = true
+                    _ = self.stopRecording()
+                    return
+                }
+                if self.elapsedTime >= Self.warningThreshold && !self.isApproachingLimit {
+                    self.isApproachingLimit = true
+                }
 
                 self.audioRecorder?.updateMeters()
                 let dB = self.audioRecorder?.averagePower(forChannel: 0) ?? -60
@@ -81,6 +100,16 @@ public final class AudioRecorderService: NSObject, ObservableObject {
                 guard let self, let startTime = self.startTime else { return }
                 self.elapsedTime = Date().timeIntervalSince(startTime)
 
+                // Duration limit checks
+                if self.elapsedTime >= Self.hardStopThreshold {
+                    self.didAutoStop = true
+                    _ = self.stopRecording()
+                    return
+                }
+                if self.elapsedTime >= Self.warningThreshold && !self.isApproachingLimit {
+                    self.isApproachingLimit = true
+                }
+
                 self.audioRecorder?.updateMeters()
                 let dB = self.audioRecorder?.averagePower(forChannel: 0) ?? -60
                 let linear = max(0, min(1, (dB + 60) / 60))
@@ -101,6 +130,7 @@ public final class AudioRecorderService: NSObject, ObservableObject {
         let duration = elapsedTime
         isRecording = false
         isPaused = false
+        isApproachingLimit = false
         elapsedTime = 0
         startTime = nil
         pausedElapsed = 0

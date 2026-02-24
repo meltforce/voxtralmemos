@@ -23,6 +23,8 @@ targets:
       - VoxtralMemos
     dependencies:
       - package: VoxtralCore
+    scheme:
+      storeKitConfiguration: VoxtralMemos/StoreKit/Products.storekit
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

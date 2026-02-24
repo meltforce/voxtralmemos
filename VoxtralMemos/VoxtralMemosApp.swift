@@ -4,7 +4,8 @@ import VoxtralCore
 
 @main
 struct VoxtralMemosApp: App {
-    let container: ModelContainer
+    let container: ModelContainer?
+    let containerError: String?
 
     init() {
         do {
@@ -14,19 +15,26 @@ struct VoxtralMemosApp: App {
                 MemoTransformation.self
             ])
             let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            container = try ModelContainer(for: schema, configurations: [config])
+            let c = try ModelContainer(for: schema, configurations: [config])
 
-            PromptTemplate.seedBuiltInTemplates(in: container.mainContext)
+            PromptTemplate.seedBuiltInTemplates(in: c.mainContext)
+            container = c
+            containerError = nil
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            container = nil
+            containerError = error.localizedDescription
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            if let container {
+                ContentView()
+                    .modelContainer(container)
+            } else {
+                DatabaseErrorView(errorMessage: containerError ?? "Unknown error")
+            }
         }
-        .modelContainer(container)
     }
 }
 
@@ -38,6 +46,19 @@ struct ContentView: View {
             MemoListView()
         } else {
             OnboardingView()
+        }
+    }
+}
+
+struct DatabaseErrorView: View {
+    let errorMessage: String
+
+    var body: some View {
+        ContentUnavailableView {
+            Label("Database Error", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+        } description: {
+            Text("Failed to initialize the database. Try restarting the app or reinstalling.\n\n\(errorMessage)")
         }
     }
 }

@@ -86,6 +86,7 @@ struct RecordingOverlayView: View {
                     .foregroundStyle(.white)
             }
         }
+        .accessibilityLabel("Start recording")
         .buttonStyle(PressScaleStyle(scale: 0.92))
     }
 
@@ -93,8 +94,16 @@ struct RecordingOverlayView: View {
 
     private func recordingContent(barWidth: CGFloat) -> some View {
         HStack(spacing: 12) {
-            WaveformView(samples: recorder.levelSamples)
-                .frame(width: 80, height: 28)
+            if recorder.isApproachingLimit {
+                Text("Limit")
+                    .font(.caption2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.red)
+                    .frame(width: 80, height: 28)
+            } else {
+                WaveformView(samples: recorder.levelSamples)
+                    .frame(width: 80, height: 28)
+            }
 
             Spacer()
 
@@ -111,6 +120,7 @@ struct RecordingOverlayView: View {
                     .foregroundStyle(recorder.isPaused ? Color(hex: 0x007AFF) : .primary)
                     .contentTransition(.symbolEffect(.replace))
             }
+            .accessibilityLabel(recorder.isPaused ? "Resume recording" : "Pause recording")
             .buttonStyle(PressScaleStyle(scale: 0.9))
 
             // Stop button
@@ -126,13 +136,14 @@ struct RecordingOverlayView: View {
                         .frame(width: 12, height: 12)
                 }
             }
+            .accessibilityLabel("Stop recording")
             .buttonStyle(PressScaleStyle(scale: 0.88))
 
             Spacer()
 
             Text(formatTime(recorder.elapsedTime))
                 .font(.body.monospacedDigit())
-                .foregroundStyle(.primary)
+                .foregroundStyle(recorder.isApproachingLimit ? .red : .primary)
                 .frame(width: 54, alignment: .trailing)
         }
     }

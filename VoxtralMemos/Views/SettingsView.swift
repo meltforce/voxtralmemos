@@ -1,10 +1,15 @@
 import SwiftUI
 import SwiftData
+import StoreKit
 import VoxtralCore
+import os
+
+private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "Settings")
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.requestReview) private var requestReview
     @State private var apiKey: String = ""
     @State private var isKeyVisible = false
     @State private var isValidating = false
@@ -16,12 +21,18 @@ struct SettingsView: View {
     @State private var availableTranscriptionModels: [MistralModel] = []
     @State private var isLoadingModels = false
     @State private var showDeleteConfirmation = false
+    @State private var showDeleteAudioConfirmation = false
     @State private var showTemplates = false
     @State private var storageInfo: (fileCount: Int, totalSize: String) = (0, "0 MB")
     @State private var defaultActionTemplateId: String = UserDefaults.standard.string(forKey: "defaultActionTemplateId") ?? ""
     @Query(sort: \PromptTemplate.sortOrder) private var allTemplates: [PromptTemplate]
+    @FocusState private var apiKeyFocused: Bool
 
     private let keychainService = KeychainService()
+
+    private static let contactEmail = URL(string: "mailto:voxtralmemos@meltforce.com")!
+    private static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
+    private static let mistralPricingURL = URL(string: "https://mistral.ai/pricing")!
 
     private let languages: [(code: String, name: String)] = [
         ("auto", "Auto-detect"),
@@ -47,17 +58,24 @@ struct SettingsView: View {
                             TextField("Mistral API Key", text: $apiKey)
                                 .textContentType(.password)
                                 .autocorrectionDisabled()
+                                .focused($apiKeyFocused)
+                                .onSubmit { saveAPIKey() }
                         } else {
                             SecureField("Mistral API Key", text: $apiKey)
+                                .focused($apiKeyFocused)
+                                .onSubmit { saveAPIKey() }
                         }
                         Button {
                             isKeyVisible.toggle()
                         } label: {
                             Image(systemName: isKeyVisible ? "eye.slash" : "eye")
+                                .accessibilityLabel(isKeyVisible ? "Hide API key" : "Show API key")
                         }
                     }
-                    .onChange(of: apiKey) { _, newValue in
-                        keychainService.saveAPIKey(newValue)
+                    .onChange(of: apiKeyFocused) { _, focused in
+                        if !focused { saveAPIKey() }
+                    }
+                    .onChange(of: apiKey) { _, _ in
                         validationResult = nil
                     }
 
@@ -168,7 +186,7 @@ struct SettingsView: View {
                         for template in allTemplates {
                             template.isAutoRun = (template.id.uuidString == newValue)
                         }
-                        try? modelContext.save()
+                        modelContext.loggedSave()
                     }
                 } header: {
                     Text("After Transcription")
@@ -183,8 +201,8 @@ struct SettingsView: View {
                     }
                 }
 
-                // About
-                Section("About") {
+                // Local Storage
+                Section("Local Storage") {
                     HStack {
                         Text("Audio Files")
                         Spacer()
@@ -197,13 +215,41 @@ struct SettingsView: View {
                         Text(storageInfo.totalSize)
                             .foregroundStyle(.secondary)
                     }
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")
-                            .foregroundStyle(.secondary)
+                    Button("Delete Audio Files", role: .destructive) {
+                        showDeleteAudioConfirmation = true
                     }
-                    Link("Mistral Pricing", destination: URL(string: "https://mistral.ai/pricing")!)
+                }
+
+                // Support the Developer
+                Section("Support the Developer") {
+                    NavigationLink {
+                        TipJarView()
+                    } label: {
+                        Label("Tip Jar", systemImage: "heart.fill")
+                    }
+                    Link(destination: Self.mistralPricingURL) {
+                        Label("Mistral Pricing", systemImage: "creditcard")
+                    }
+                }
+
+                // About
+                Section("About") {
+                    Button {
+                        requestReview()
+                    } label: {
+                        Label("Rate the App", systemImage: "star.fill")
+                    }
+                    Link(destination: Self.contactEmail) {
+                        Label("Contact Us", systemImage: "envelope")
+                    }
+                    NavigationLink {
+                        PrivacyPolicyView()
+                    } label: {
+                        Label("Privacy Policy", systemImage: "hand.raised.fill")
+                    }
+                    Link(destination: Self.termsURL) {
+                        Label("Terms of Use", systemImage: "doc.text")
+                    }
                 }
 
                 // Danger Zone
@@ -212,12 +258,27 @@ struct SettingsView: View {
                         showDeleteConfirmation = true
                     }
                 }
+
+                // Footer
+                Section {
+                } footer: {
+                    HStack {
+                        Spacer()
+                        Text("Voxtral Memos v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0") (\(Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"))")
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                        Spacer()
+                    }
+                }
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
+                    Button("Done") {
+                        saveAPIKey()
+                        dismiss()
+                    }
                 }
             }
             .confirmationDialog("Delete All Data?", isPresented: $showDeleteConfirmation, titleVisibility: .visible) {
@@ -227,12 +288,23 @@ struct SettingsView: View {
             } message: {
                 Text("This will permanently delete all memos, audio files, and transformations. This cannot be undone.")
             }
+            .confirmationDialog("Delete Audio Files?", isPresented: $showDeleteAudioConfirmation, titleVisibility: .visible) {
+                Button("Delete Audio Files", role: .destructive) {
+                    deleteAudioFiles()
+                }
+            } message: {
+                Text("This will delete all audio recordings but keep your memos and transcripts. This cannot be undone.")
+            }
             .task {
                 apiKey = keychainService.getAPIKey() ?? ""
                 await loadModels()
                 calculateStorage()
             }
         }
+    }
+
+    private func saveAPIKey() {
+        keychainService.saveAPIKey(apiKey)
     }
 
     private func validateKey() {
@@ -284,12 +356,30 @@ struct SettingsView: View {
         storageInfo = (files.count, formatter.string(fromByteCount: totalBytes))
     }
 
+    private func deleteAudioFiles() {
+        let audioDir = Memo.audioDirectory
+        if let files = try? FileManager.default.contentsOfDirectory(at: audioDir, includingPropertiesForKeys: nil) {
+            for file in files {
+                do {
+                    try FileManager.default.removeItem(at: file)
+                } catch {
+                    logger.error("Failed to delete audio file \(file.lastPathComponent): \(error.localizedDescription)")
+                }
+            }
+        }
+        calculateStorage()
+    }
+
     private func deleteAllData() {
         // Delete audio files
         let audioDir = Memo.audioDirectory
         if let files = try? FileManager.default.contentsOfDirectory(at: audioDir, includingPropertiesForKeys: nil) {
             for file in files {
-                try? FileManager.default.removeItem(at: file)
+                do {
+                    try FileManager.default.removeItem(at: file)
+                } catch {
+                    logger.error("Failed to delete file \(file.lastPathComponent): \(error.localizedDescription)")
+                }
             }
         }
         // Delete all memos
@@ -298,7 +388,7 @@ struct SettingsView: View {
             try modelContext.delete(model: MemoTransformation.self)
             try modelContext.save()
         } catch {
-            print("Failed to delete data: \(error)")
+            logger.error("Failed to delete data: \(error.localizedDescription)")
         }
         calculateStorage()
     }
