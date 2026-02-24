@@ -7,6 +7,7 @@ public final class KeychainService: Sendable {
 
     public init() {}
 
+    @discardableResult
     public func saveAPIKey(_ key: String) -> Bool {
         deleteAPIKey()
         let data = key.data(using: .utf8)!

@@ -1,6 +1,7 @@
 #if os(iOS)
 import Foundation
 import AVFoundation
+import AVFAudio
 
 @MainActor
 public final class AudioRecorderService: NSObject, ObservableObject {
@@ -143,11 +144,7 @@ public final class AudioRecorderService: NSObject, ObservableObject {
     }
 
     public static func requestPermission() async -> Bool {
-        await withCheckedContinuation { continuation in
-            AVAudioSession.sharedInstance().requestRecordPermission { granted in
-                continuation.resume(returning: granted)
-            }
-        }
+        await AVAudioApplication.requestRecordPermission()
     }
 }
 #endif
