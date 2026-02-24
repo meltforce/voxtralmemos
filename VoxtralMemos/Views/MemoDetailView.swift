@@ -8,18 +8,13 @@ struct MemoDetailView: View {
     @StateObject private var player = AudioPlayerService()
     @State private var showTemplatePicker = false
     @State private var selectedTab = 0
+    @State private var copyConfirmed = false
 
     /// The first transformation is shown in the second tab
     private var primaryTransformation: MemoTransformation? {
         memo.transformations
             .sorted { $0.createdAt < $1.createdAt }
             .first
-    }
-
-    /// All transformations beyond the first
-    private var additionalTransformations: [MemoTransformation] {
-        let sorted = memo.transformations.sorted { $0.createdAt < $1.createdAt }
-        return Array(sorted.dropFirst())
     }
 
     private var primaryTabName: String {
@@ -58,70 +53,61 @@ struct MemoDetailView: View {
                     } else {
                         primaryActionContent
                     }
-
-                    // Additional transformations beyond the primary
-                    if !additionalTransformations.isEmpty {
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("More")
-                                .font(.headline)
-                                .foregroundStyle(.secondary)
-
-                            ForEach(additionalTransformations) { transformation in
-                                TransformationCardView(transformation: transformation) {
-                                    rerunTransformation(transformation)
-                                } onDelete: {
-                                    modelContext.delete(transformation)
-                                    try? modelContext.save()
-                                }
-                            }
-                        }
-                    }
                 }
                 .padding()
             }
+
+            // Copy / Share pill buttons
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    Button {
+                        copyContent()
+                        withAnimation {
+                            copyConfirmed = true
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation {
+                                copyConfirmed = false
+                            }
+                        }
+                    } label: {
+                        Label(
+                            copyConfirmed ? "Copied" : "Copy",
+                            systemImage: copyConfirmed ? "checkmark" : "doc.on.doc"
+                        )
+                        .font(.subheadline)
+                        .contentTransition(.symbolEffect(.replace))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .glassEffect(.regular.interactive())
+                    }
+                    .disabled(currentContent == nil)
+
+                    ShareLink(item: currentContent ?? "") {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                            .font(.subheadline)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .glassEffect(.regular.interactive())
+                    }
+                    .disabled(currentContent == nil)
+                }
+            }
+            .padding(.vertical, 8)
+
+            // Playback bar with waveform
+            PlaybackBarView(player: player, audioFileURL: memo.audioFileURL)
         }
         .navigationTitle("Memo")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Button {
-                        showTemplatePicker = true
-                    } label: {
-                        Label("Apply Template", systemImage: "wand.and.stars")
-                    }
+                Button {
+                    showTemplatePicker = true
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
                 .disabled(memo.transcript == nil)
-            }
-
-            ToolbarItemGroup(placement: .bottomBar) {
-                PlaybackBarView(player: player, audioFileURL: memo.audioFileURL)
-
-                Spacer()
-
-                Button {
-                    copyContent()
-                } label: {
-                    VStack(spacing: 2) {
-                        Image(systemName: "doc.on.doc")
-                        Text("Copy")
-                            .font(.caption2)
-                    }
-                }
-                .disabled(currentContent == nil)
-
-                ShareLink(item: currentContent ?? "") {
-                    VStack(spacing: 2) {
-                        Image(systemName: "square.and.arrow.up")
-                        Text("Share")
-                            .font(.caption2)
-                    }
-                }
-                .disabled(currentContent == nil)
             }
         }
         .sheet(isPresented: $showTemplatePicker) {
@@ -265,27 +251,6 @@ struct MemoDetailView: View {
         }
     }
 
-    private func rerunTransformation(_ transformation: MemoTransformation) {
-        guard let template = transformation.template, let transcript = memo.transcript else { return }
-        transformation.status = .processing
-        transformation.result = nil
-        transformation.errorMessage = nil
-        try? modelContext.save()
-
-        Task {
-            let service = MistralDirectService()
-            let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
-            do {
-                let result = try await service.runPrompt(transcript: transcript, systemPrompt: template.systemPrompt, model: model)
-                transformation.result = result
-                transformation.status = .ready
-            } catch {
-                transformation.status = .failed
-                transformation.errorMessage = error.localizedDescription
-            }
-            try? modelContext.save()
-        }
-    }
 }
 
 // MARK: - WhisperMemos-style tab button
@@ -317,47 +282,93 @@ private struct PlaybackBarView: View {
     @ObservedObject var player: AudioPlayerService
     let audioFileURL: URL
 
+    @State private var waveformSamples: [Float] = []
+    private let barCount = 60
+
     var body: some View {
-        HStack(spacing: 12) {
-            Button {
-                player.seek(to: max(0, player.currentTime - 15))
-            } label: {
-                Image(systemName: "gobackward.15")
-                    .font(.body)
+        VStack(spacing: 8) {
+            Divider()
+
+            // Waveform scrubber
+            GeometryReader { geo in
+                let progress = player.duration > 0 ? player.currentTime / player.duration : 0
+
+                ZStack(alignment: .leading) {
+                    // Waveform bars
+                    HStack(spacing: 1.5) {
+                        ForEach(0..<barCount, id: \.self) { index in
+                            let sample = index < waveformSamples.count ? waveformSamples[index] : Float(0.1)
+                            let barProgress = Double(index) / Double(barCount)
+                            RoundedRectangle(cornerRadius: 1)
+                                .fill(barProgress <= progress ? Color.teal : Color.secondary.opacity(0.25))
+                                .frame(height: max(2, CGFloat(sample) * 32))
+                        }
+                    }
+                    .frame(height: 32)
+                }
+                .frame(width: geo.size.width, height: 32)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            let fraction = max(0, min(1, value.location.x / geo.size.width))
+                            player.seek(to: fraction * player.duration)
+                        }
+                )
             }
+            .frame(height: 32)
+            .padding(.horizontal)
 
-            Button {
-                togglePlayback()
-            } label: {
-                Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title3)
+            // Transport controls
+            HStack {
+                Text(formatTime(player.currentTime))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, alignment: .leading)
+
+                Spacer()
+
+                GlassEffectContainer(spacing: 20) {
+                    HStack(spacing: 20) {
+                        Button {
+                            player.seek(to: max(0, player.currentTime - 15))
+                        } label: {
+                            Image(systemName: "gobackward.15")
+                                .font(.body)
+                        }
+                        .buttonStyle(.glass)
+
+                        Button {
+                            togglePlayback()
+                        } label: {
+                            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                                .font(.title2)
+                        }
+                        .buttonStyle(.glassProminent)
+
+                        Button {
+                            player.seek(to: min(player.duration, player.currentTime + 15))
+                        } label: {
+                            Image(systemName: "goforward.15")
+                                .font(.body)
+                        }
+                        .buttonStyle(.glass)
+                    }
+                }
+
+                Spacer()
+
+                Text(formatTime(player.duration))
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, alignment: .trailing)
             }
-
-            Button {
-                player.seek(to: min(player.duration, player.currentTime + 15))
-            } label: {
-                Image(systemName: "goforward.15")
-                    .font(.body)
-            }
-
-            Text(formatTime(player.currentTime))
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .trailing)
-
-            Slider(
-                value: Binding(
-                    get: { player.currentTime },
-                    set: { player.seek(to: $0) }
-                ),
-                in: 0...(max(player.duration, 1))
-            )
-            .tint(.teal)
-
-            Text(formatTime(player.duration))
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 38, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.bottom, 4)
+        }
+        .background(.ultraThinMaterial)
+        .task {
+            waveformSamples = await AudioWaveformExtractor.extractSamples(from: audioFileURL, count: barCount)
         }
     }
 
@@ -379,87 +390,6 @@ private struct PlaybackBarView: View {
         let minutes = Int(time) / 60
         let seconds = Int(time) % 60
         return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-
-struct TransformationCardView: View {
-    let transformation: MemoTransformation
-    var onRerun: () -> Void
-    var onDelete: () -> Void
-
-    @State private var isExpanded = true
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                if let template = transformation.template {
-                    Image(systemName: template.icon)
-                        .foregroundStyle(.teal)
-                    Text(template.name)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                } else {
-                    Text("Transformation")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                }
-
-                Spacer()
-
-                if transformation.status == .processing {
-                    ProgressView()
-                        .controlSize(.small)
-                } else if transformation.status == .failed {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundStyle(.red)
-                }
-
-                Button {
-                    withAnimation { isExpanded.toggle() }
-                } label: {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            if isExpanded {
-                if let result = transformation.result {
-                    Text(LocalizedStringKey(result))
-                        .font(.body)
-                        .textSelection(.enabled)
-                } else if transformation.status == .failed {
-                    Text(transformation.errorMessage ?? "Failed")
-                        .font(.callout)
-                        .foregroundStyle(.red)
-                } else if transformation.status == .processing {
-                    Text("Processing...")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding()
-        .background(Color(.secondarySystemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .contextMenu {
-            if let result = transformation.result {
-                Button {
-                    UIPasteboard.general.string = result
-                } label: {
-                    Label("Copy", systemImage: "doc.on.doc")
-                }
-                ShareLink(item: result) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
-            }
-            Button(action: onRerun) {
-                Label("Re-run", systemImage: "arrow.clockwise")
-            }
-            Button(role: .destructive, action: onDelete) {
-                Label("Delete", systemImage: "trash")
-            }
-        }
     }
 }
 
@@ -492,7 +422,7 @@ struct TemplatePickerSheet: View {
                 }
                 .foregroundStyle(.primary)
             }
-            .navigationTitle("Apply Template")
+            .navigationTitle("Prompts")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -505,6 +435,11 @@ struct TemplatePickerSheet: View {
     private func applyTemplate(_ template: PromptTemplate) {
         guard let transcript = memo.transcript else { return }
         let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
+
+        // Remove existing transformations so we always have a single result
+        for existing in memo.transformations {
+            modelContext.delete(existing)
+        }
 
         let transformation = MemoTransformation(
             status: .processing,

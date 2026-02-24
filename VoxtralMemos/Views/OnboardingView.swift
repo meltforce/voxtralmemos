@@ -48,6 +48,7 @@ struct OnboardingView: View {
                     }
                     .font(.callout)
                 }
+                .buttonStyle(.glass)
 
                 if let error = errorMessage {
                     Text(error)
@@ -63,17 +64,13 @@ struct OnboardingView: View {
                 HStack {
                     if isValidating {
                         ProgressView()
-                            .tint(.white)
                     }
                     Text("Continue")
                         .fontWeight(.semibold)
                 }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
-                .background(apiKey.isEmpty ? Color.gray : Color.teal)
-                .foregroundStyle(.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .buttonStyle(.glassProminent)
             .disabled(apiKey.isEmpty || isValidating)
             .padding(.horizontal)
 
