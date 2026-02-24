@@ -28,6 +28,10 @@ struct MemoListView: View {
                                     NavigationLink(value: memo.id) {
                                         MemoRowView(memo: memo)
                                     }
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .top).combined(with: .opacity),
+                                        removal: .opacity
+                                    ))
                                     .swipeActions(edge: .leading) {
                                         if memo.status == .failed {
                                             Button {
@@ -51,10 +55,11 @@ struct MemoListView: View {
                             .listRowSeparator(.hidden)
                     }
                     .listStyle(.plain)
+                    .animation(.spring(response: 0.45, dampingFraction: 0.85), value: memos.map(\.id))
                 }
 
-                // Recording bar
-                RecordingBarView(recorder: recorder) {
+                // Recording overlay
+                RecordingOverlayView(recorder: recorder) {
                     startRecording()
                 } onStop: {
                     stopRecording()
@@ -174,18 +179,28 @@ struct MemoListView: View {
         guard let templates = try? modelContext.fetch(descriptor),
               let template = templates.first(where: { $0.id == uuid }) else { return }
 
-        let service = MistralDirectService()
         let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
+
+        // Check for a cached transformation matching this template
+        if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
+            // Cache hit — just mark it as the active one
+            cached.selectedAt = Date()
+            try? modelContext.save()
+            return
+        }
 
         let transformation = MemoTransformation(
             status: .processing,
             modelUsed: model,
+            promptSnapshot: template.systemPrompt,
+            selectedAt: Date(),
             memo: memo,
             template: template
         )
         modelContext.insert(transformation)
         try? modelContext.save()
 
+        let service = MistralDirectService()
         do {
             let result = try await service.runPrompt(
                 transcript: memo.transcript ?? "",
@@ -221,6 +236,8 @@ struct MemoRowView: View {
                 .font(.body)
                 .fontWeight(.medium)
                 .lineLimit(2)
+                .contentTransition(.interpolate)
+                .animation(.easeInOut(duration: 0.3), value: memo.displayTitle)
 
             HStack {
                 Text(memo.formattedDate)
@@ -234,8 +251,7 @@ struct MemoRowView: View {
                 Spacer()
 
                 if memo.status == .transcribing {
-                    ProgressView()
-                        .controlSize(.small)
+                    StatusBadgeView(memo: memo)
                 } else if memo.status == .failed {
                     Image(systemName: "exclamationmark.circle.fill")
                         .foregroundStyle(.red)
@@ -260,69 +276,63 @@ struct MemoRowView: View {
     }
 }
 
-struct RecordingBarView: View {
-    @ObservedObject var recorder: AudioRecorderService
-    var onRecord: () -> Void
-    var onStop: () -> Void
+// MARK: - Status Badge
 
-    var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack(spacing: 16) {
-                if recorder.isRecording {
-                    // Pause placeholder (not implemented in V1)
-                    Button(action: {}) {
-                        Image(systemName: "pause.fill")
-                            .font(.title2)
-                            .foregroundStyle(.primary)
-                    }
-                    .disabled(true)
-                    .opacity(0.3)
+struct StatusBadgeView: View {
+    let memo: Memo
+    @State private var phase = 0
+    @State private var timer: Timer?
 
-                    Button(action: onStop) {
-                        HStack(spacing: 8) {
-                            Circle()
-                                .fill(.red)
-                                .frame(width: 12, height: 12)
-                            Text("Stop")
-                                .fontWeight(.semibold)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 12)
-                        .background(.red.opacity(0.15))
-                        .clipShape(Capsule())
-                    }
-                    .foregroundStyle(.red)
-
-                    Text(formatTime(recorder.elapsedTime))
-                        .font(.body.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                } else {
-                    Spacer()
-                    Button(action: onRecord) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "mic.fill")
-                            Text("Record")
-                                .fontWeight(.semibold)
-                        }
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 14)
-                        .background(.teal)
-                        .foregroundStyle(.white)
-                        .clipShape(Capsule())
-                    }
-                    Spacer()
-                }
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(.ultraThinMaterial)
+    private var label: String {
+        switch phase {
+        case 0: "Uploading"
+        case 1: "Waiting"
+        default: "Processing"
         }
     }
 
-    private func formatTime(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+    private var icon: String {
+        switch phase {
+        case 0: "arrow.up.circle"
+        case 1: "hourglass"
+        default: "gear"
+        }
+    }
+
+    private var tint: Color {
+        switch phase {
+        case 0: .blue
+        case 1: .orange
+        default: .purple
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.caption2)
+            Text(label)
+                .font(.caption2)
+                .fontWeight(.medium)
+        }
+        .foregroundStyle(tint)
+        .contentTransition(.interpolate)
+        .animation(.easeInOut(duration: 0.3), value: phase)
+        .onAppear { startTimer() }
+        .onDisappear { stopTimer() }
+    }
+
+    private func startTimer() {
+        phase = 0
+        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
+            Task { @MainActor in
+                if phase < 2 { phase += 1 }
+            }
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 }

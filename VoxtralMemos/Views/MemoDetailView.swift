@@ -6,14 +6,16 @@ struct MemoDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var memo: Memo
     @StateObject private var player = AudioPlayerService()
+    @Environment(\.dismiss) private var dismiss
     @State private var showTemplatePicker = false
+    @State private var showDeleteConfirmation = false
     @State private var selectedTab = 0
     @State private var copyConfirmed = false
 
-    /// The first transformation is shown in the second tab
+    /// The most recently selected transformation is shown in the second tab
     private var primaryTransformation: MemoTransformation? {
         memo.transformations
-            .sorted { $0.createdAt < $1.createdAt }
+            .sorted { ($0.selectedAt ?? .distantPast) > ($1.selectedAt ?? .distantPast) }
             .first
     }
 
@@ -102,8 +104,19 @@ struct MemoDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showTemplatePicker = true
+                Menu {
+                    if selectedTab == 1, primaryTransformation?.status == .ready {
+                        Button { reprocessTransformation() } label: {
+                            Label("Reprocess", systemImage: "arrow.clockwise")
+                        }
+                    }
+                    Button { showTemplatePicker = true } label: {
+                        Label("Change Prompt", systemImage: "text.badge.star")
+                    }
+                    Divider()
+                    Button(role: .destructive) { showDeleteConfirmation = true } label: {
+                        Label("Delete Memo", systemImage: "trash")
+                    }
                 } label: {
                     Image(systemName: "ellipsis.circle")
                 }
@@ -112,6 +125,9 @@ struct MemoDetailView: View {
         }
         .sheet(isPresented: $showTemplatePicker) {
             TemplatePickerSheet(memo: memo)
+        }
+        .confirmationDialog("Delete Memo?", isPresented: $showDeleteConfirmation) {
+            Button("Delete", role: .destructive) { deleteMemo() }
         }
         .onDisappear {
             player.stop()
@@ -223,6 +239,11 @@ struct MemoDetailView: View {
     }
 
     private func retryTranscription() {
+        // Wipe all cached transformations — a new transcript invalidates them
+        for existing in memo.transformations {
+            modelContext.delete(existing)
+        }
+
         memo.status = .transcribing
         memo.errorMessage = nil
         try? modelContext.save()
@@ -249,6 +270,51 @@ struct MemoDetailView: View {
         if let content = currentContent {
             UIPasteboard.general.string = content
         }
+    }
+
+    private func reprocessTransformation() {
+        guard let transformation = primaryTransformation,
+              let template = transformation.template,
+              let transcript = memo.transcript else { return }
+
+        // Delete current result and re-run with current prompt/model
+        modelContext.delete(transformation)
+
+        let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
+        let fresh = MemoTransformation(
+            status: .processing,
+            modelUsed: model,
+            promptSnapshot: template.systemPrompt,
+            selectedAt: Date(),
+            memo: memo,
+            template: template
+        )
+        modelContext.insert(fresh)
+        try? modelContext.save()
+
+        Task {
+            let service = MistralDirectService()
+            do {
+                let result = try await service.runPrompt(
+                    transcript: transcript,
+                    systemPrompt: template.systemPrompt,
+                    model: model
+                )
+                fresh.result = result
+                fresh.status = .ready
+            } catch {
+                fresh.status = .failed
+                fresh.errorMessage = error.localizedDescription
+            }
+            try? modelContext.save()
+        }
+    }
+
+    private func deleteMemo() {
+        try? FileManager.default.removeItem(at: memo.audioFileURL)
+        modelContext.delete(memo)
+        try? modelContext.save()
+        dismiss()
     }
 
 }
@@ -436,14 +502,19 @@ struct TemplatePickerSheet: View {
         guard let transcript = memo.transcript else { return }
         let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
 
-        // Remove existing transformations so we always have a single result
-        for existing in memo.transformations {
-            modelContext.delete(existing)
+        // Check for a cached transformation matching this template
+        if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
+            // Cache hit — just mark it as the active one
+            cached.selectedAt = Date()
+            try? modelContext.save()
+            return
         }
 
         let transformation = MemoTransformation(
             status: .processing,
             modelUsed: model,
+            promptSnapshot: template.systemPrompt,
+            selectedAt: Date(),
             memo: memo,
             template: template
         )
