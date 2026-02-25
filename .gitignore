@@ -19,5 +19,14 @@ Package.resolved
 .AppleDouble
 .LSOverride
 
+# Secrets & credentials
+.env
+*.key
+*.pem
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile
+
 # Misc
 input/
