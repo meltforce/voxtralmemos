@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy — Voxtral Memos</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #fff;
+            padding: 2rem 1.5rem;
+        }
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .updated {
+            font-size: 0.85rem;
+            color: #86868b;
+            margin-bottom: 2rem;
+        }
+        section { margin-bottom: 1.5rem; }
+        h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        p {
+            color: #424245;
+            font-size: 0.95rem;
+        }
+        a { color: #0066cc; }
+        a:hover { text-decoration: none; }
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e5;
+            font-size: 0.85rem;
+            color: #86868b;
+        }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1c1c1e; color: #f5f5f7; }
+            p { color: #a1a1a6; }
+            .updated, footer { color: #6e6e73; }
+            footer { border-color: #38383a; }
+            a { color: #2997ff; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: February 2025</p>
+
+    <section>
+        <h2>No Account Required</h2>
+        <p>Voxtral Memos does not require you to create an account. There are no user profiles, no sign-in, and no personal data collected by the app.</p>
+    </section>
+
+    <section>
+        <h2>On-Device Storage</h2>
+        <p>All your voice memos, transcripts, and summaries are stored locally on your device using Apple's SwiftData framework. Nothing is uploaded to any server operated by Meltforce.</p>
+    </section>
+
+    <section>
+        <h2>API Key Storage</h2>
+        <p>Your Mistral API key is stored securely in the iOS Keychain on your device. It is only used to authenticate requests to the Mistral API and is never shared with any other party.</p>
+    </section>
+
+    <section>
+        <h2>Audio Data</h2>
+        <p>When you initiate a transcription, your audio recording is sent directly to Mistral's API for processing. This transfer is encrypted in transit (HTTPS). Audio is sent only when you explicitly request transcription — never automatically in the background.</p>
+    </section>
+
+    <section>
+        <h2>No Tracking or Analytics</h2>
+        <p>Voxtral Memos contains zero third-party SDKs, no analytics, no crash reporting, and no telemetry. We do not track your usage in any way.</p>
+    </section>
+
+    <section>
+        <h2>No Third-Party Services</h2>
+        <p>The only external service the app communicates with is the Mistral AI API (api.mistral.ai), and only when you explicitly request a transcription or summarization.</p>
+    </section>
+
+    <section>
+        <h2>Data Deletion</h2>
+        <p>You can delete all your data at any time from Settings. This permanently removes all memos, audio files, and transcriptions from your device.</p>
+    </section>
+
+    <section>
+        <h2>Mistral's Privacy Policy</h2>
+        <p>Since audio data is processed by Mistral's API, their privacy policy also applies to that data. <a href="https://mistral.ai/terms/#privacy-policy">View Mistral's Privacy Policy</a>.</p>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 Meltforce. <a href="/">Voxtral Memos</a> is free and open-source software.</p>
+    </footer>
+</main>
+</body>
+</html>
