@@ -42,7 +42,13 @@ public final class Memo {
 
     public var displayTitle: String {
         if let transcript, !transcript.isEmpty {
-            return String(transcript.prefix(60))
+            let firstLine = transcript.prefix(while: { $0 != "\n" })
+            if firstLine.count <= 60 { return String(firstLine) }
+            let truncated = firstLine.prefix(60)
+            if let lastSpace = truncated.lastIndex(of: " ") {
+                return String(truncated[truncated.startIndex..<lastSpace]) + "..."
+            }
+            return String(truncated) + "..."
         }
         return "New Memo"
     }
