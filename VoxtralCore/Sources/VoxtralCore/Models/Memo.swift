@@ -72,7 +72,15 @@ public final class Memo {
             return URL.temporaryDirectory.appendingPathComponent("audio", isDirectory: true)
         }
         let audioDir = docs.appendingPathComponent("audio", isDirectory: true)
-        try? FileManager.default.createDirectory(at: audioDir, withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            at: audioDir,
+            withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+        )
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        var mutableDir = audioDir
+        try? mutableDir.setResourceValues(resourceValues)
         return audioDir
     }
 

@@ -20,17 +20,89 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
     }
 
     private let keychainService: KeychainService
+    private let session: URLSession
+    private let apiKeyOverride: String?
 
     public init(keychainService: KeychainService = KeychainService()) {
         self.keychainService = keychainService
+        self.apiKeyOverride = nil
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = NetworkConfiguration.default.requestTimeout
+        config.timeoutIntervalForResource = NetworkConfiguration.default.resourceTimeout
+        config.waitsForConnectivity = true
+        self.session = URLSession(configuration: config)
+    }
+
+    /// Internal init for test injection of a custom URLSession and optional API key override.
+    init(keychainService: KeychainService = KeychainService(), session: URLSession, apiKeyOverride: String? = nil) {
+        self.keychainService = keychainService
+        self.session = session
+        self.apiKeyOverride = apiKeyOverride
     }
 
     private var apiKey: String {
         get throws {
+            if let override = apiKeyOverride, !override.isEmpty { return override }
             guard let key = keychainService.getAPIKey(), !key.isEmpty else {
                 throw MistralError.missingAPIKey
             }
             return key
+        }
+    }
+
+    // MARK: - Retry Logic
+
+    private func performRequest(_ request: URLRequest, configuration: NetworkConfiguration = .default) async throws -> (Data, HTTPURLResponse) {
+        var lastError: any Error = MistralError.invalidResponse
+
+        for attempt in 0...configuration.maxRetries {
+            if attempt > 0 {
+                let delay = min(configuration.baseRetryDelay * pow(2.0, Double(attempt - 1)), 30)
+                try await Task.sleep(for: .seconds(delay))
+            }
+
+            do {
+                let (data, response) = try await session.data(for: request)
+
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw MistralError.invalidResponse
+                }
+
+                guard httpResponse.statusCode == 200 else {
+                    let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+                    let error = MistralError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
+                    if error.isRetryable && attempt < configuration.maxRetries {
+                        lastError = error
+                        continue
+                    }
+                    throw error
+                }
+
+                return (data, httpResponse)
+            } catch let error as MistralError {
+                if error.isRetryable && attempt < configuration.maxRetries {
+                    lastError = error
+                    continue
+                }
+                throw error
+            } catch let error as URLError where Self.isTransientURLError(error) {
+                if attempt < configuration.maxRetries {
+                    lastError = error
+                    continue
+                }
+                throw error
+            }
+        }
+
+        throw lastError
+    }
+
+    private static func isTransientURLError(_ error: URLError) -> Bool {
+        switch error.code {
+        case .timedOut, .networkConnectionLost, .notConnectedToInternet:
+            return true
+        default:
+            return false
         }
     }
 
@@ -65,16 +137,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
         request.httpBody = body
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw MistralError.invalidResponse
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw MistralError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
-        }
+        let (data, _) = try await performRequest(request, configuration: .transcription)
 
         let decoded = try JSONDecoder().decode(TranscriptionResponse.self, from: data)
         return TranscriptionResult(text: decoded.text, language: decoded.language)
@@ -99,16 +162,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
         )
         request.httpBody = try JSONEncoder().encode(chatRequest)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw MistralError.invalidResponse
-        }
-
-        guard httpResponse.statusCode == 200 else {
-            let errorBody = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw MistralError.apiError(statusCode: httpResponse.statusCode, message: errorBody)
-        }
+        let (data, _) = try await performRequest(request)
 
         let decoded = try JSONDecoder().decode(ChatResponse.self, from: data)
         guard let content = decoded.choices.first?.message.content else {
@@ -124,11 +178,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
         var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw MistralError.invalidResponse
-        }
+        let (data, _) = try await performRequest(request)
 
         let decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
         let models = decoded.data
@@ -153,11 +203,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
         var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw MistralError.invalidResponse
-        }
+        let (data, _) = try await performRequest(request)
 
         let decoded = try JSONDecoder().decode(ModelsResponse.self, from: data)
         let models = decoded.data
@@ -178,9 +224,15 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
         var request = URLRequest(url: Self.modelsURL)
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
 
-        let (_, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else { return false }
-        return httpResponse.statusCode == 200
+        do {
+            let (_, _) = try await performRequest(request)
+            return true
+        } catch let error as MistralError {
+            if case .apiError(statusCode: 401, _) = error {
+                return false
+            }
+            throw error
+        }
     }
 }
 
@@ -231,6 +283,15 @@ public enum MistralError: LocalizedError {
     case invalidResponse
     case apiError(statusCode: Int, message: String)
     case emptyResponse
+
+    public var isRetryable: Bool {
+        switch self {
+        case .apiError(let statusCode, _):
+            return statusCode == 429 || (500...504).contains(statusCode)
+        case .missingAPIKey, .emptyResponse, .invalidResponse:
+            return false
+        }
+    }
 
     public var errorDescription: String? {
         switch self {

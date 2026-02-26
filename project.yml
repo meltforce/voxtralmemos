@@ -15,6 +15,18 @@ packages:
   VoxtralCore:
     path: VoxtralCore
 
+schemes:
+  VoxtralMemos:
+    build:
+      targets:
+        VoxtralMemos: all
+    test:
+      targets:
+        - package: VoxtralCore/VoxtralCoreTests
+    run:
+      config: Debug
+      storeKitConfiguration: VoxtralMemos/StoreKit/Products.storekit
+
 targets:
   VoxtralMemos:
     type: application
@@ -23,8 +35,6 @@ targets:
       - VoxtralMemos
     dependencies:
       - package: VoxtralCore
-    scheme:
-      storeKitConfiguration: VoxtralMemos/StoreKit/Products.storekit
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

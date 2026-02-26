@@ -289,7 +289,11 @@ struct SettingsView: View {
     }
 
     private func saveAPIKey() {
-        keychainService.saveAPIKey(apiKey)
+        do {
+            try keychainService.saveAPIKey(apiKey)
+        } catch {
+            logger.error("Failed to save API key: \(error.localizedDescription)")
+        }
     }
 
     private func validateKey() {

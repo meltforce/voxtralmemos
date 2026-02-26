@@ -88,7 +88,13 @@ struct OnboardingView: View {
         errorMessage = nil
 
         // Save temporarily for the validation request, revert on failure
-        keychainService.saveAPIKey(apiKey)
+        do {
+            try keychainService.saveAPIKey(apiKey)
+        } catch {
+            errorMessage = "Failed to save API key securely."
+            isValidating = false
+            return
+        }
 
         Task {
             let service = MistralDirectService(keychainService: keychainService)
@@ -97,11 +103,11 @@ struct OnboardingView: View {
                 if valid {
                     hasCompletedOnboarding = true
                 } else {
-                    keychainService.saveAPIKey("")
+                    keychainService.deleteAPIKey()
                     errorMessage = "Invalid API key. Please check and try again."
                 }
             } catch {
-                keychainService.saveAPIKey("")
+                keychainService.deleteAPIKey()
                 errorMessage = error.localizedDescription
             }
             isValidating = false

@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "VoxtralCore", targets: ["VoxtralCore"])
     ],
     targets: [
-        .target(name: "VoxtralCore")
+        .target(name: "VoxtralCore"),
+        .testTarget(name: "VoxtralCoreTests", dependencies: ["VoxtralCore"])
     ]
 )

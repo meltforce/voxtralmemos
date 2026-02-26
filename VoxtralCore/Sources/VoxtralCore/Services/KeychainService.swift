@@ -1,14 +1,33 @@
 import Foundation
 import Security
 
+public enum KeychainError: LocalizedError {
+    case saveFailed(OSStatus)
+
+    public var errorDescription: String? {
+        switch self {
+        case .saveFailed(let status):
+            return "Failed to save to Keychain (status: \(status))."
+        }
+    }
+}
+
 public final class KeychainService: Sendable {
-    private let service = "com.meltforce.voxtralmemos"
-    private let apiKeyAccount = "mistral-api-key"
+    private let service: String
+    private let apiKeyAccount: String
 
-    public init() {}
+    public init() {
+        self.service = "com.meltforce.voxtralmemos"
+        self.apiKeyAccount = "mistral-api-key"
+    }
 
-    @discardableResult
-    public func saveAPIKey(_ key: String) -> Bool {
+    /// Internal init for tests — allows using a separate keychain namespace.
+    init(service: String, account: String) {
+        self.service = service
+        self.apiKeyAccount = account
+    }
+
+    public func saveAPIKey(_ key: String) throws {
         deleteAPIKey()
         let data = key.data(using: .utf8)!
         let query: [String: Any] = [
@@ -16,10 +35,12 @@ public final class KeychainService: Sendable {
             kSecAttrService as String: service,
             kSecAttrAccount as String: apiKeyAccount,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         ]
         let status = SecItemAdd(query as CFDictionary, nil)
-        return status == errSecSuccess
+        guard status == errSecSuccess else {
+            throw KeychainError.saveFailed(status)
+        }
     }
 
     public func getAPIKey() -> String? {
