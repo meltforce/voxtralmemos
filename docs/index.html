@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voxtral Memos — Voice memos, transcribed and summarized</title>
+
+    <!-- Open Graph / Link Preview -->
+    <meta property="og:title" content="Voxtral Memos">
+    <meta property="og:description" content="Record voice memos, get instant transcriptions and smart summaries — powered by Mistral AI.">
+    <meta property="og:image" content="https://voxtralmemos.meltforce.org/beta/app-icon.png">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="1024">
+    <meta property="og:url" content="https://voxtralmemos.meltforce.org/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Voxtral Memos">
+    <meta name="twitter:description" content="Record voice memos, get instant transcriptions and smart summaries — powered by Mistral AI.">
+    <meta name="twitter:image" content="https://voxtralmemos.meltforce.org/beta/app-icon.png">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #fff;
+            padding: 2rem 1.5rem;
+        }
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-top: 2rem;
+        }
+        .hero img {
+            width: 128px;
+            height: 128px;
+            border-radius: 28px;
+            margin-bottom: 1.25rem;
+        }
+        .hero h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+        .hero .tagline {
+            font-size: 1.05rem;
+            color: #86868b;
+        }
+
+        /* Features */
+        .features {
+            margin-bottom: 2.5rem;
+        }
+        .feature {
+            margin-bottom: 1.25rem;
+        }
+        .feature h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        .feature p {
+            color: #424245;
+            font-size: 0.95rem;
+        }
+
+        /* Beta banner */
+        .beta-banner {
+            text-align: center;
+            padding: 1.5rem;
+            background: #f5f5f7;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+        .beta-banner p {
+            color: #424245;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+        .beta-banner .badge {
+            display: inline-block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #0066cc;
+            background: #e8f0fe;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        .cta {
+            display: inline-block;
+            padding: 0.6rem 1.25rem;
+            background: #0066cc;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .cta:hover { background: #0055aa; color: #fff; }
+
+        /* Footer */
+        a { color: #0066cc; }
+        a:hover { text-decoration: none; }
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e5;
+            font-size: 0.85rem;
+            color: #86868b;
+            text-align: center;
+        }
+        footer a { color: #86868b; }
+        footer .sep { margin: 0 0.4rem; }
+
+        /* Dark mode */
+        @media (prefers-color-scheme: dark) {
+            body { background: #1c1c1e; color: #f5f5f7; }
+            .hero .tagline { color: #6e6e73; }
+            .feature p { color: #a1a1a6; }
+            .beta-banner { background: #2c2c2e; }
+            .beta-banner p { color: #a1a1a6; }
+            .beta-banner .badge { color: #2997ff; background: #1a3a5c; }
+            a { color: #2997ff; }
+            .cta { background: #2997ff; }
+            .cta:hover { background: #2080e0; }
+            footer { border-color: #38383a; color: #6e6e73; }
+            footer a { color: #6e6e73; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div class="hero">
+        <img src="/beta/app-icon.png" alt="Voxtral Memos icon">
+        <h1>Voxtral Memos</h1>
+        <p class="tagline">Voice memos, transcribed and summarized.</p>
+    </div>
+
+    <div class="features">
+        <div class="feature">
+            <h2>Record Anywhere</h2>
+            <p>Capture ideas, meetings, or thoughts with a single tap. Your recordings are stored locally on your device.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Instant Transcription</h2>
+            <p>Turn speech into text using Mistral's Voxtral model. Accurate, fast, and multilingual.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Smart Summaries</h2>
+            <p>Get concise summaries of your memos powered by Mistral AI. Extract key points, action items, or custom formats.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Privacy First</h2>
+            <p>No account required. No tracking. No analytics. All data stays on your device. You bring your own API key.</p>
+        </div>
+
+        <div class="feature">
+            <h2>Free &amp; Open Source</h2>
+            <p>Voxtral Memos is completely free with no ads, no subscriptions, and no hidden costs. The source code is available on <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>.</p>
+        </div>
+    </div>
+
+    <div class="beta-banner">
+        <span class="badge">Beta</span>
+        <p>Voxtral Memos is currently in beta testing via TestFlight. Want to try it out?</p>
+        <a class="cta" href="/beta/">Join the Beta</a>
+    </div>
+
+    <footer>
+        <a href="/privacy/">Privacy Policy</a>
+        <span class="sep">&middot;</span>
+        <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>
+    </footer>
+</main>
+</body>
+</html>
