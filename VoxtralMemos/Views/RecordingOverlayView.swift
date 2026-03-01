@@ -5,10 +5,12 @@ struct RecordingOverlayView: View {
     @ObservedObject var recorder: AudioRecorderService
     var onRecord: () -> Void
     var onStop: () -> Void
+    var onDiscard: () -> Void
 
     @State private var morphProgress: CGFloat = 0
     @State private var contentOpacity: CGFloat = 0
     @State private var stopPulse = false
+    @State private var showDiscardAlert = false
 
     private let idleWidth: CGFloat = 120
     private let barHeight: CGFloat = 56
@@ -94,7 +96,22 @@ struct RecordingOverlayView: View {
 
     private func recordingContent(barWidth: CGFloat) -> some View {
         HStack(spacing: 12) {
-            if recorder.isApproachingLimit {
+            if recorder.isPaused {
+                // Discard button replaces waveform when paused
+                Button { showDiscardAlert = true } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "trash")
+                            .font(.caption)
+                        Text("Discard")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundStyle(.red)
+                    .frame(width: 80, height: 28)
+                }
+                .accessibilityLabel("Discard recording")
+                .buttonStyle(PressScaleStyle(scale: 0.9))
+            } else if recorder.isApproachingLimit {
                 Text("Limit")
                     .font(.caption2)
                     .fontWeight(.bold)
@@ -145,6 +162,12 @@ struct RecordingOverlayView: View {
                 .font(.body.monospacedDigit())
                 .foregroundStyle(recorder.isApproachingLimit ? .red : .primary)
                 .frame(width: 54, alignment: .trailing)
+        }
+        .alert("Discard Recording?", isPresented: $showDiscardAlert) {
+            Button("Discard", role: .destructive) { onDiscard() }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("The recording will be permanently deleted.")
         }
     }
 

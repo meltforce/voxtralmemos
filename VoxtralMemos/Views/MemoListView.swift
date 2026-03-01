@@ -70,6 +70,8 @@ struct MemoListView: View {
                     startRecording()
                 } onStop: {
                     stopRecording()
+                } onDiscard: {
+                    discardRecording()
                 }
             }
             .navigationTitle("Memos")
@@ -172,6 +174,20 @@ struct MemoListView: View {
 
         Task {
             await transcribeMemo(memo)
+        }
+    }
+
+    private func discardRecording() {
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        guard let fileName = currentRecordingFileName else { return }
+        _ = recorder.stopRecording()
+        currentRecordingFileName = nil
+
+        let fileURL = Memo.audioDirectory.appendingPathComponent(fileName)
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+        } catch {
+            logger.error("Failed to delete discarded audio file: \(error.localizedDescription)")
         }
     }
 
