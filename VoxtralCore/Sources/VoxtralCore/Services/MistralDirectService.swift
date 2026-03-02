@@ -148,6 +148,9 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
     public func runPrompt(transcript: String, systemPrompt: String, model: String) async throws -> String {
         let key = try apiKey
 
+        let languageInstruction = "\n\nRespond in the same language as the transcript, unless the instructions above explicitly request a different language."
+        let finalSystemPrompt = systemPrompt + languageInstruction
+
         var request = URLRequest(url: Self.chatURL)
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
@@ -156,7 +159,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
         let chatRequest = ChatRequest(
             model: model,
             messages: [
-                ChatMessage(role: "system", content: systemPrompt),
+                ChatMessage(role: "system", content: finalSystemPrompt),
                 ChatMessage(role: "user", content: transcript)
             ]
         )
