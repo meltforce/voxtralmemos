@@ -10,7 +10,7 @@ struct MemoDetailView: View {
     @Bindable var memo: Memo
     @StateObject private var player = AudioPlayerService()
     @Environment(\.dismiss) private var dismiss
-    @State private var showTemplatePicker = false
+    @Query(sort: \PromptTemplate.sortOrder) private var templates: [PromptTemplate]
     @State private var showDeleteConfirmation = false
     @State private var selectedTab = 0
     @State private var copyConfirmed = false
@@ -114,12 +114,15 @@ struct MemoDetailView: View {
                             Label("Reprocess", systemImage: "arrow.clockwise")
                         }
                     }
-                    Button { showTemplatePicker = true } label: {
-                        Label("Change Prompt", systemImage: "text.badge.star")
-                    }
                     Divider()
                     Button(role: .destructive) { showDeleteConfirmation = true } label: {
                         Label("Delete Memo", systemImage: "trash")
+                    }
+                    Divider()
+                    ForEach(templates) { template in
+                        Button { applyTemplate(template) } label: {
+                            Label(template.name, systemImage: template.icon)
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -127,9 +130,6 @@ struct MemoDetailView: View {
                 .accessibilityLabel("More options")
                 .disabled(memo.transcript == nil)
             }
-        }
-        .sheet(isPresented: $showTemplatePicker) {
-            TemplatePickerSheet(memo: memo)
         }
         .confirmationDialog("Delete Memo?", isPresented: $showDeleteConfirmation) {
             Button("Delete", role: .destructive) { deleteMemo() }
@@ -323,6 +323,47 @@ struct MemoDetailView: View {
         }
     }
 
+    private func applyTemplate(_ template: PromptTemplate) {
+        guard let transcript = memo.transcript else { return }
+        let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
+
+        // Check for a cached transformation matching this template
+        if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
+            // Cache hit — just mark it as the active one
+            cached.selectedAt = Date()
+            modelContext.loggedSave()
+            return
+        }
+
+        let transformation = MemoTransformation(
+            status: .processing,
+            modelUsed: model,
+            promptSnapshot: template.systemPrompt,
+            selectedAt: Date(),
+            memo: memo,
+            template: template
+        )
+        modelContext.insert(transformation)
+        modelContext.loggedSave()
+
+        Task {
+            let service = MistralDirectService()
+            do {
+                let result = try await service.runPrompt(
+                    transcript: transcript,
+                    systemPrompt: template.systemPrompt,
+                    model: model
+                )
+                transformation.result = result
+                transformation.status = .ready
+            } catch {
+                transformation.status = .failed
+                transformation.errorMessage = error.localizedDescription
+            }
+            modelContext.loggedSave()
+        }
+    }
+
     private func deleteMemo() {
         do {
             try FileManager.default.removeItem(at: memo.audioFileURL)
@@ -477,83 +518,3 @@ private struct PlaybackBarView: View {
     }
 }
 
-struct TemplatePickerSheet: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
-    @Query(sort: \PromptTemplate.sortOrder) private var templates: [PromptTemplate]
-    let memo: Memo
-
-    var body: some View {
-        NavigationStack {
-            List(templates) { template in
-                Button {
-                    applyTemplate(template)
-                    dismiss()
-                } label: {
-                    HStack {
-                        Image(systemName: template.icon)
-                            .foregroundStyle(.teal)
-                            .frame(width: 30)
-                        VStack(alignment: .leading) {
-                            Text(template.name)
-                                .font(.body)
-                            Text(template.systemPrompt)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .foregroundStyle(.primary)
-            }
-            .navigationTitle("Prompts")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-            }
-        }
-    }
-
-    private func applyTemplate(_ template: PromptTemplate) {
-        guard let transcript = memo.transcript else { return }
-        let model = UserDefaults.standard.string(forKey: "selectedModel") ?? "mistral-small-latest"
-
-        // Check for a cached transformation matching this template
-        if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
-            // Cache hit — just mark it as the active one
-            cached.selectedAt = Date()
-            modelContext.loggedSave()
-            return
-        }
-
-        let transformation = MemoTransformation(
-            status: .processing,
-            modelUsed: model,
-            promptSnapshot: template.systemPrompt,
-            selectedAt: Date(),
-            memo: memo,
-            template: template
-        )
-        modelContext.insert(transformation)
-        modelContext.loggedSave()
-
-        Task {
-            let service = MistralDirectService()
-            do {
-                let result = try await service.runPrompt(
-                    transcript: transcript,
-                    systemPrompt: template.systemPrompt,
-                    model: model
-                )
-                transformation.result = result
-                transformation.status = .ready
-            } catch {
-                transformation.status = .failed
-                transformation.errorMessage = error.localizedDescription
-            }
-            modelContext.loggedSave()
-        }
-    }
-}
