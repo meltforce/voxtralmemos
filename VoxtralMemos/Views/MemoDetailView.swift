@@ -8,6 +8,7 @@ private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "
 struct MemoDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var memo: Memo
+    var searchText: String = ""
     @StateObject private var player = AudioPlayerService()
     @Environment(\.dismiss) private var dismiss
     @Query(sort: \PromptTemplate.sortOrder) private var templates: [PromptTemplate]
@@ -180,7 +181,7 @@ struct MemoDetailView: View {
             .background(.red.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         } else if let transcript = memo.transcript {
-            Text(transcript)
+            Text(highlighted(transcript, query: searchText))
                 .font(.body)
                 .textSelection(.enabled)
         } else {
@@ -229,6 +230,21 @@ struct MemoDetailView: View {
         } else {
             return primaryTransformation?.result
         }
+    }
+
+    // MARK: - Highlighting
+
+    private func highlighted(_ text: String, query: String) -> AttributedString {
+        var attr = AttributedString(text)
+        guard !query.isEmpty else { return attr }
+        var searchStart = attr.startIndex
+        while searchStart < attr.endIndex,
+              let range = attr[searchStart...].range(of: query, options: .caseInsensitive) {
+            attr[range].backgroundColor = .yellow.opacity(0.3)
+            attr[range].font = .body.bold()
+            searchStart = range.upperBound
+        }
+        return attr
     }
 
     // MARK: - Actions

@@ -33,7 +33,7 @@ struct MemoListView: View {
                             Section(section.0) {
                                 ForEach(section.1) { memo in
                                     NavigationLink(value: memo.id) {
-                                        MemoRowView(memo: memo)
+                                        MemoRowView(memo: memo, searchText: searchText)
                                     }
                                     .transition(.asymmetric(
                                         insertion: .move(edge: .top).combined(with: .opacity),
@@ -85,7 +85,7 @@ struct MemoListView: View {
             }
             .navigationDestination(for: UUID.self) { memoId in
                 if let memo = memos.first(where: { $0.id == memoId }) {
-                    MemoDetailView(memo: memo)
+                    MemoDetailView(memo: memo, searchText: searchText)
                 }
             }
             .sheet(isPresented: $showSettings) {
@@ -143,6 +143,7 @@ struct MemoListView: View {
     }
 
     private func startRecording() {
+        searchText = ""
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         let fileName = "\(UUID().uuidString).m4a"
         currentRecordingFileName = fileName
@@ -302,15 +303,23 @@ struct MemoListView: View {
 
 struct MemoRowView: View {
     let memo: Memo
+    var searchText: String = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(memo.displayTitle)
-                .font(.body)
-                .fontWeight(.medium)
-                .lineLimit(2)
-                .contentTransition(.interpolate)
-                .animation(.easeInOut(duration: 0.3), value: memo.displayTitle)
+            if !searchText.isEmpty, let snippet = snippetAroundMatch(in: memo.transcript, query: searchText) {
+                Text(highlighted(snippet, query: searchText))
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(2)
+            } else {
+                Text(memo.displayTitle)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(2)
+                    .contentTransition(.interpolate)
+                    .animation(.easeInOut(duration: 0.3), value: memo.displayTitle)
+            }
 
             HStack {
                 Text(memo.formattedDate)
@@ -346,6 +355,34 @@ struct MemoRowView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func snippetAroundMatch(in text: String?, query: String) -> String? {
+        guard let text, !query.isEmpty,
+              let range = text.range(of: query, options: .caseInsensitive) else { return nil }
+        let center = text.distance(from: text.startIndex, to: range.lowerBound)
+        let windowRadius = 40
+        let start = max(0, center - windowRadius)
+        let end = min(text.count, center + query.count + windowRadius)
+        let startIdx = text.index(text.startIndex, offsetBy: start)
+        let endIdx = text.index(text.startIndex, offsetBy: end)
+        let slice = String(text[startIdx..<endIdx])
+        let prefix = start > 0 ? "..." : ""
+        let suffix = end < text.count ? "..." : ""
+        return "\(prefix)\(slice)\(suffix)"
+    }
+
+    private func highlighted(_ text: String, query: String) -> AttributedString {
+        var attr = AttributedString(text)
+        guard !query.isEmpty else { return attr }
+        var searchStart = attr.startIndex
+        while searchStart < attr.endIndex,
+              let range = attr[searchStart...].range(of: query, options: .caseInsensitive) {
+            attr[range].backgroundColor = .yellow.opacity(0.3)
+            attr[range].font = .body.bold()
+            searchStart = range.upperBound
+        }
+        return attr
     }
 }
 
