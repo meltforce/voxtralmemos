@@ -10,6 +10,7 @@ struct MemoListView: View {
     @Query(sort: \Memo.createdAt, order: .reverse) private var memos: [Memo]
     @StateObject private var recorder = AudioRecorderService()
     @State private var searchText = ""
+    @State private var isSearchPresented = false
     @State private var showSettings = false
     @State private var permissionGranted = false
     @State private var currentRecordingFileName: String?
@@ -91,7 +92,7 @@ struct MemoListView: View {
             .sheet(isPresented: $showSettings) {
                 SettingsView()
             }
-            .searchable(text: $searchText, prompt: "Search memos")
+            .searchable(text: $searchText, isPresented: $isSearchPresented, prompt: "Search memos")
             .task {
                 permissionGranted = await AudioRecorderService.requestPermission()
             }
@@ -144,6 +145,7 @@ struct MemoListView: View {
 
     private func startRecording() {
         searchText = ""
+        isSearchPresented = false
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         let fileName = "\(UUID().uuidString).m4a"
         currentRecordingFileName = fileName
