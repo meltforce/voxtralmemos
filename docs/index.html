@@ -54,6 +54,18 @@
             color: #86868b;
         }
 
+        /* App Store badge */
+        .download {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .download a {
+            display: inline-block;
+        }
+        .download img {
+            height: 54px;
+        }
+
         /* Features */
         .features {
             margin-bottom: 2.5rem;
@@ -70,43 +82,6 @@
             color: #424245;
             font-size: 0.95rem;
         }
-
-        /* Beta banner */
-        .beta-banner {
-            text-align: center;
-            padding: 1.5rem;
-            background: #f5f5f7;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-        }
-        .beta-banner p {
-            color: #424245;
-            font-size: 0.95rem;
-            margin-bottom: 0.75rem;
-        }
-        .beta-banner .badge {
-            display: inline-block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #0066cc;
-            background: #e8f0fe;
-            padding: 0.2rem 0.6rem;
-            border-radius: 4px;
-            margin-bottom: 0.5rem;
-        }
-        .cta {
-            display: inline-block;
-            padding: 0.6rem 1.25rem;
-            background: #0066cc;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 500;
-        }
-        .cta:hover { background: #0055aa; color: #fff; }
 
         /* Footer */
         a { color: #0066cc; }
@@ -127,12 +102,7 @@
             body { background: #1c1c1e; color: #f5f5f7; }
             .hero .tagline { color: #6e6e73; }
             .feature p { color: #a1a1a6; }
-            .beta-banner { background: #2c2c2e; }
-            .beta-banner p { color: #a1a1a6; }
-            .beta-banner .badge { color: #2997ff; background: #1a3a5c; }
             a { color: #2997ff; }
-            .cta { background: #2997ff; }
-            .cta:hover { background: #2080e0; }
             footer { border-color: #38383a; color: #6e6e73; }
             footer a { color: #6e6e73; }
         }
@@ -145,6 +115,14 @@
         <h1>Voxtral Memos</h1>
         <p class="tagline">Voice memos, transcribed and summarized.</p>
         <p class="tagline">Powered by <a href="https://mistral.ai">Mistral AI</a> — Europe's leading AI company.</p>
+    </div>
+
+    <!-- TODO: Replace href with actual App Store URL after launch -->
+    <div class="download">
+        <a href="https://apps.apple.com/app/voxtral-memos/idXXXXXXXXXX">
+            <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                 alt="Download on the App Store">
+        </a>
     </div>
 
     <div class="features">
@@ -160,7 +138,7 @@
 
         <div class="feature">
             <h2>Smart Summaries</h2>
-            <p>Get concise summaries of your memos. Extract key points, action items, or custom formats.</p>
+            <p>Get concise summaries of your memos. Extract key points, action items, or custom formats with flexible prompt templates.</p>
         </div>
 
         <div class="feature">
@@ -179,13 +157,10 @@
         </div>
     </div>
 
-    <div class="beta-banner">
-        <span class="badge">Beta</span>
-        <p>Voxtral Memos is currently in closed beta testing via TestFlight. Stay tuned for the public release.</p>
-    </div>
-
     <footer>
         <a href="/privacy/">Privacy Policy</a>
+        <span class="sep">&middot;</span>
+        <a href="/faq/">FAQ</a>
         <span class="sep">&middot;</span>
         <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>
     </footer>

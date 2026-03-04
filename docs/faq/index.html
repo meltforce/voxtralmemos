@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ — Voxtral Memos</title>
+    <meta property="og:title" content="Voxtral Memos — FAQ">
+    <meta property="og:description" content="Frequently asked questions about Voxtral Memos.">
+    <meta property="og:url" content="https://voxtralmemos.meltforce.org/faq/">
+    <meta property="og:type" content="website">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #1d1d1f;
+            background: #fff;
+            padding: 2rem 1.5rem;
+        }
+        main {
+            max-width: 640px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        .subtitle {
+            font-size: 0.95rem;
+            color: #86868b;
+            margin-bottom: 2.5rem;
+        }
+        details {
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 1rem;
+        }
+        summary {
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0.4rem 0;
+            list-style: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::before {
+            content: "+";
+            display: inline-block;
+            width: 1.2rem;
+            font-weight: 400;
+            color: #86868b;
+        }
+        details[open] summary::before { content: "\2212"; }
+        .answer {
+            padding: 0.5rem 0 0.25rem 1.2rem;
+            color: #424245;
+            font-size: 0.95rem;
+        }
+        .answer p { margin-bottom: 0.5rem; }
+        .answer a { color: #0066cc; }
+        .answer a:hover { text-decoration: none; }
+        .answer ul {
+            padding-left: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        .answer li { margin-bottom: 0.25rem; }
+        .section-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #86868b;
+            margin: 2rem 0 1rem 0;
+        }
+        a.back { color: #0066cc; font-size: 0.9rem; }
+        a.back:hover { text-decoration: none; }
+        footer {
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #e5e5e5;
+            font-size: 0.85rem;
+            color: #86868b;
+            text-align: center;
+        }
+        footer a { color: #86868b; }
+        footer .sep { margin: 0 0.4rem; }
+        @media (prefers-color-scheme: dark) {
+            body { background: #1c1c1e; color: #f5f5f7; }
+            .subtitle, .section-title, footer { color: #6e6e73; }
+            summary::before { color: #6e6e73; }
+            .answer, .answer li { color: #a1a1a6; }
+            .answer a, a.back { color: #2997ff; }
+            details { border-color: #38383a; }
+            footer { border-color: #38383a; }
+            footer a { color: #6e6e73; }
+        }
+    </style>
+</head>
+<body>
+<main>
+    <a class="back" href="/">&larr; Voxtral Memos</a>
+    <h1 style="margin-top: 1rem;">FAQ</h1>
+    <p class="subtitle">Frequently asked questions about Voxtral Memos.</p>
+
+    <p class="section-title">Getting Started</p>
+
+    <details>
+        <summary>What is Voxtral Memos?</summary>
+        <div class="answer">
+            <p>Voxtral Memos is a voice memo app for iPhone that uses AI to transcribe and summarize your recordings. It's powered by Mistral AI's Voxtral speech model.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>What is a Mistral API key and how do I get one?</summary>
+        <div class="answer">
+            <p>Mistral AI is the company that provides the AI models used for transcription and summarization. An API key is like a password that lets the app communicate with Mistral's servers.</p>
+            <p>To get a key:</p>
+            <ul>
+                <li>Go to <a href="https://console.mistral.ai/">console.mistral.ai</a></li>
+                <li>Create a free account</li>
+                <li>Navigate to "API Keys" and create a new key</li>
+                <li>Copy the key and paste it into Voxtral Memos</li>
+            </ul>
+        </div>
+    </details>
+
+    <details>
+        <summary>Is the app free?</summary>
+        <div class="answer">
+            <p>Yes, Voxtral Memos is completely free with no ads, no subscriptions, and no paywalls. The source code is open source under the MIT license.</p>
+            <p>However, using the Mistral API has a small cost — see the pricing question below.</p>
+        </div>
+    </details>
+
+    <p class="section-title">Pricing & Costs</p>
+
+    <details>
+        <summary>How much does the Mistral API cost?</summary>
+        <div class="answer">
+            <p>Mistral charges per use based on audio duration and text length. Typical costs:</p>
+            <ul>
+                <li>Transcribing a 5-minute memo: ~$0.01</li>
+                <li>Summarizing a transcript: ~$0.001</li>
+            </ul>
+            <p>For casual use, expect to spend less than $1 per month. You can check current pricing at <a href="https://mistral.ai/products/pricing">mistral.ai/products/pricing</a>.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>What does the Tip Jar do?</summary>
+        <div class="answer">
+            <p>The Tip Jar is a completely optional way to support the development of Voxtral Memos. It does not unlock any features — everything is available for free. Tips go directly to the developer.</p>
+        </div>
+    </details>
+
+    <p class="section-title">Features</p>
+
+    <details>
+        <summary>Which languages are supported?</summary>
+        <div class="answer">
+            <p>Voxtral Memos supports transcription in 13+ languages: English, German, French, Spanish, Italian, Portuguese, Dutch, Hindi, Russian, Arabic, Japanese, Chinese, and Korean.</p>
+            <p>You can also set it to auto-detect the language.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>What are prompt templates?</summary>
+        <div class="answer">
+            <p>Prompt templates let you customize how the AI processes your transcripts. Built-in templates include Summary, To-Do List, and Journal Entry. You can also create your own templates with custom instructions.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>Can I use the app offline?</summary>
+        <div class="answer">
+            <p>You can record memos offline. However, transcription and summarization require an internet connection since they are processed by Mistral's API.</p>
+        </div>
+    </details>
+
+    <p class="section-title">Privacy & Data</p>
+
+    <details>
+        <summary>Where is my data stored?</summary>
+        <div class="answer">
+            <p>All your memos, transcripts, and summaries are stored locally on your device. Nothing is uploaded to any server operated by us. Your API key is stored securely in the iOS Keychain.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>What happens to my audio when I transcribe?</summary>
+        <div class="answer">
+            <p>When you request a transcription, your audio is sent directly to Mistral's API over an encrypted connection (HTTPS). Audio is only sent when you explicitly trigger transcription — never in the background.</p>
+            <p>Mistral's data processing is GDPR-compliant. See <a href="https://mistral.ai/terms/#privacy-policy">Mistral's Privacy Policy</a> for details.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>Does the app track me?</summary>
+        <div class="answer">
+            <p>No. Voxtral Memos contains zero third-party SDKs, no analytics, no crash reporting, and no telemetry. We do not track your usage in any way.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>How do I delete all my data?</summary>
+        <div class="answer">
+            <p>Go to Settings in the app and tap "Delete All Data". This permanently removes all memos, audio files, and transcriptions from your device. You can also delete individual memos by swiping left on them in the memo list.</p>
+        </div>
+    </details>
+
+    <p class="section-title">Troubleshooting</p>
+
+    <details>
+        <summary>My API key is not working</summary>
+        <div class="answer">
+            <p>Make sure you:</p>
+            <ul>
+                <li>Copied the full key without extra spaces</li>
+                <li>Have an active Mistral account with billing set up</li>
+                <li>Created the key at <a href="https://console.mistral.ai/">console.mistral.ai</a></li>
+            </ul>
+            <p>Use the "Validate" button in Settings to check if your key is working.</p>
+        </div>
+    </details>
+
+    <details>
+        <summary>Transcription failed</summary>
+        <div class="answer">
+            <p>This can happen if:</p>
+            <ul>
+                <li>Your internet connection is unstable</li>
+                <li>Your API key has run out of credit</li>
+                <li>The recording is very short or silent</li>
+            </ul>
+            <p>You can retry a failed transcription by swiping right on the memo in the list.</p>
+        </div>
+    </details>
+
+    <p class="section-title">Contact</p>
+
+    <details>
+        <summary>How do I get support?</summary>
+        <div class="answer">
+            <p>Email us at <a href="mailto:voxtralmemos@meltforce.com">voxtralmemos@meltforce.com</a> or open an issue on <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>.</p>
+        </div>
+    </details>
+
+    <footer>
+        <a href="/">Voxtral Memos</a>
+        <span class="sep">&middot;</span>
+        <a href="/privacy/">Privacy Policy</a>
+        <span class="sep">&middot;</span>
+        <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>
+    </footer>
+</main>
+</body>
+</html>
