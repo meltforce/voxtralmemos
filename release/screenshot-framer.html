@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Voxtral Memos — Screenshot Framer</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif; background: #1a1a1a; color: #fff; display: flex; height: 100vh; }
+
+  .sidebar { width: 360px; background: #222; padding: 20px; overflow-y: auto; flex-shrink: 0; border-right: 1px solid #333; }
+  .sidebar h1 { font-size: 18px; margin-bottom: 16px; color: #FF7000; }
+  .sidebar label { display: block; font-size: 13px; color: #aaa; margin-top: 14px; margin-bottom: 4px; }
+  .sidebar input[type="text"], .sidebar select {
+    width: 100%; padding: 8px 10px; background: #333; border: 1px solid #444; border-radius: 6px;
+    color: #fff; font-size: 14px; font-family: inherit;
+  }
+  .sidebar input[type="file"] { margin-top: 4px; }
+  .sidebar .hint { font-size: 11px; color: #666; margin-top: 2px; }
+  .sidebar input[type="range"] { width: 100%; margin-top: 4px; }
+  .sidebar .range-val { font-size: 12px; color: #888; }
+
+  .btn { display: inline-block; padding: 10px 20px; background: #FF7000; color: #fff; border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px; }
+  .btn:hover { background: #e06000; }
+  .btn-secondary { background: #444; margin-left: 8px; }
+  .btn-secondary:hover { background: #555; }
+
+  .preset-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .preset-btn { padding: 4px 10px; background: #333; border: 1px solid #555; border-radius: 4px;
+    color: #ccc; font-size: 12px; cursor: pointer; }
+  .preset-btn:hover { background: #444; }
+  .preset-btn.active { border-color: #FF7000; color: #FF7000; }
+
+  .preview-area { flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px; overflow: auto; }
+  .preview-area canvas { max-height: 90vh; max-width: 100%; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 30px rgba(0,0,0,0.5); }
+
+  hr { border: none; border-top: 1px solid #333; margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>Screenshot Framer</h1>
+
+  <label>Screenshot</label>
+  <input type="file" id="fileInput" accept="image/png,image/jpeg">
+  <label style="margin-top:8px">Or load from server</label>
+  <select id="serverFile">
+    <option value="">-- select --</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.36.13.png">List (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.36.47.png">Transcript (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.37.06.png">Summary (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.38.09.png">Prompts (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.38.22.png">Menu (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.41.59.png">Recording (Light)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.38.59.png">List (Dark)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.39.07.png">Transcript (Dark)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.39.16.png">Summary (Dark)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.39.24.png">Menu (Dark)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.39.40.png">Prompts (Dark)</option>
+    <option value="screenshots/Simulator Screenshot - iPhone 17 Pro Max - 2026-03-04 at 04.41.46.png">Recording (Dark)</option>
+  </select>
+
+  <label>Headline</label>
+  <input type="text" id="headline" placeholder="Record your thoughts" value="*Record* your thoughts">
+  <div class="hint">Wrap words in *asterisks* for orange accent</div>
+
+  <label>Subtext (optional)</label>
+  <input type="text" id="subtext" placeholder="" value="">
+
+  <label>Background</label>
+  <select id="bgMode">
+    <option value="white">White</option>
+    <option value="black">Black</option>
+  </select>
+
+  <label>Device Color</label>
+  <select id="deviceColor">
+    <option value="silver">Silver</option>
+    <option value="orange">Cosmic Orange</option>
+    <option value="blue">Deep Blue</option>
+  </select>
+
+  <label>Device Scale: <span class="range-val" id="scaleVal">60%</span></label>
+  <input type="range" id="scaleRange" min="40" max="75" value="60">
+
+  <label>Vertical Position: <span class="range-val" id="posVal">58%</span></label>
+  <input type="range" id="posRange" min="35" max="75" value="58">
+
+  <hr>
+  <label>Presets</label>
+  <div class="preset-list" id="presets"></div>
+
+  <hr>
+  <button class="btn" onclick="exportPNG()">Export PNG</button>
+  <button class="btn btn-secondary" onclick="exportAll()">Export All Presets</button>
+  <div id="status" style="font-size:12px;color:#888;margin-top:8px;"></div>
+</div>
+
+<div class="preview-area">
+  <canvas id="canvas" width="1320" height="2868"></canvas>
+</div>
+
+<script>
+const W = 1320, H = 2868;
+const ACCENT = '#FF7000';
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+let currentImage = null;
+
+// Apple bezel: 1470x3000, screen area: 1320x2868
+// Offsets: screen is inset 75px left/right, 66px top/bottom within the bezel
+const BEZEL = {
+  width: 1470,
+  height: 3000,
+  screenOffsetX: 75,  // (1470 - 1320) / 2
+  screenOffsetY: 66,  // (3000 - 2868) / 2
+};
+
+// Load bezel images
+const bezelImages = {};
+const bezelPaths = {
+  silver: 'bezels/iPhone 17 Pro Max - Silver - Portrait.png',
+  orange: 'bezels/iPhone 17 Pro Max - Cosmic Orange - Portrait.png',
+  blue: 'bezels/iPhone 17 Pro Max - Deep Blue - Portrait.png',
+};
+
+let bezelsLoaded = 0;
+for (const [key, path] of Object.entries(bezelPaths)) {
+  const img = new Image();
+  img.onload = () => {
+    bezelImages[key] = img;
+    bezelsLoaded++;
+    if (bezelsLoaded === Object.keys(bezelPaths).length) {
+      document.getElementById('status').textContent = 'Bezels loaded';
+      render();
+    }
+  };
+  img.onerror = () => {
+    document.getElementById('status').textContent = `Failed to load ${key} bezel`;
+  };
+  img.src = path;
+}
+
+const presets = [
+  { id: 'recording-light', headline: '*Record* your thoughts', subtext: 'Capture ideas instantly', bg: 'white' },
+  { id: 'list-light', headline: '*Record* and *transcribe*', subtext: 'All your voice memos in one place', bg: 'white' },
+  { id: 'transcript-light', headline: 'Instant *AI* transcription', subtext: 'Powered by Mistral Voxtral', bg: 'white' },
+  { id: 'summary-light', headline: 'Smart *summaries* in one tap', subtext: '', bg: 'white' },
+  { id: 'prompts-light', headline: 'Custom *AI prompts*', subtext: 'Summaries, todos, translations and more', bg: 'white' },
+  { id: 'menu-light', headline: '*Transform* with one tap', subtext: '', bg: 'white' },
+  { id: 'recording-dark', headline: '*Record* your thoughts', subtext: 'Capture ideas instantly', bg: 'black' },
+  { id: 'list-dark', headline: '*Record* and *transcribe*', subtext: 'All your voice memos in one place', bg: 'black' },
+  { id: 'transcript-dark', headline: 'Instant *AI* transcription', subtext: 'Powered by Mistral Voxtral', bg: 'black' },
+  { id: 'summary-dark', headline: 'Smart *summaries* in one tap', subtext: '', bg: 'black' },
+  { id: 'prompts-dark', headline: 'Custom *AI prompts*', subtext: 'Summaries, todos, translations and more', bg: 'black' },
+  { id: 'menu-dark', headline: '*Transform* with one tap', subtext: '', bg: 'black' },
+];
+
+const presetsEl = document.getElementById('presets');
+presets.forEach(p => {
+  const btn = document.createElement('button');
+  btn.className = 'preset-btn';
+  btn.textContent = p.id;
+  btn.onclick = () => {
+    document.getElementById('headline').value = p.headline;
+    document.getElementById('subtext').value = p.subtext;
+    document.getElementById('bgMode').value = p.bg;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  };
+  presetsEl.appendChild(btn);
+});
+
+// Event listeners
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => { currentImage = img; render(); };
+  img.src = URL.createObjectURL(file);
+});
+
+document.getElementById('serverFile').addEventListener('change', e => {
+  const path = e.target.value;
+  if (!path) return;
+  const img = new Image();
+  img.onload = () => { currentImage = img; render(); };
+  img.src = path;
+});
+
+['headline', 'subtext', 'bgMode', 'deviceColor'].forEach(id => {
+  document.getElementById(id).addEventListener('input', render);
+});
+
+document.getElementById('scaleRange').addEventListener('input', e => {
+  document.getElementById('scaleVal').textContent = e.target.value + '%';
+  render();
+});
+document.getElementById('posRange').addEventListener('input', e => {
+  document.getElementById('posVal').textContent = e.target.value + '%';
+  render();
+});
+
+function render() {
+  const bg = document.getElementById('bgMode').value;
+  const headline = document.getElementById('headline').value;
+  const subtext = document.getElementById('subtext').value;
+  const deviceColor = document.getElementById('deviceColor').value;
+  const scale = parseInt(document.getElementById('scaleRange').value) / 100;
+  const vPos = parseInt(document.getElementById('posRange').value) / 100;
+  const isWhite = bg === 'white';
+
+  // Background
+  ctx.fillStyle = isWhite ? '#FFFFFF' : '#000000';
+  ctx.fillRect(0, 0, W, H);
+
+  const bezelImg = bezelImages[deviceColor];
+
+  if (currentImage && bezelImg) {
+    // Scale the bezel to desired size
+    const bezelDrawW = Math.round(BEZEL.width * scale);
+    const bezelDrawH = Math.round(BEZEL.height * scale);
+    const bezelX = Math.round((W - bezelDrawW) / 2);
+    const bezelY = Math.round(H * vPos - bezelDrawH / 2);
+
+    // Screen position within the scaled bezel
+    const screenDrawW = Math.round(1320 * scale);
+    const screenDrawH = Math.round(2868 * scale);
+    const screenX = bezelX + Math.round(BEZEL.screenOffsetX * scale);
+    const screenY = bezelY + Math.round(BEZEL.screenOffsetY * scale);
+
+    // Draw screenshot first (behind bezel)
+    ctx.drawImage(currentImage, screenX, screenY, screenDrawW, screenDrawH);
+
+    // Draw bezel on top (transparent PNG overlays the screenshot)
+    ctx.drawImage(bezelImg, bezelX, bezelY, bezelDrawW, bezelDrawH);
+  } else if (currentImage) {
+    // Fallback: draw screenshot without bezel
+    const imgW = Math.round(W * scale);
+    const imgH = Math.round(currentImage.height * (imgW / currentImage.width));
+    const imgX = Math.round((W - imgW) / 2);
+    const imgY = Math.round(H * vPos - imgH / 2);
+    ctx.drawImage(currentImage, imgX, imgY, imgW, imgH);
+  }
+
+  // Headline
+  if (headline) {
+    drawAccentText(headline, H * 0.08, 82, isWhite);
+  }
+
+  // Subtext
+  if (subtext) {
+    ctx.font = '400 44px -apple-system, "SF Pro Display", sans-serif';
+    ctx.fillStyle = isWhite ? '#666666' : '#888888';
+    ctx.textAlign = 'center';
+    ctx.fillText(subtext, W / 2, H * 0.95);
+  }
+}
+
+function drawAccentText(text, y, fontSize, isWhite) {
+  const parts = [];
+  const regex = /\*([^*]+)\*/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push({ text: text.slice(lastIndex, match.index), accent: false });
+    }
+    parts.push({ text: match[1], accent: true });
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push({ text: text.slice(lastIndex), accent: false });
+  }
+
+  const normalColor = isWhite ? '#000000' : '#FFFFFF';
+  ctx.font = `700 ${fontSize}px -apple-system, "SF Pro Display", sans-serif`;
+  ctx.textAlign = 'left';
+
+  let totalWidth = 0;
+  parts.forEach(p => { totalWidth += ctx.measureText(p.text).width; });
+
+  let x = (W - totalWidth) / 2;
+  parts.forEach(p => {
+    ctx.fillStyle = p.accent ? ACCENT : normalColor;
+    ctx.fillText(p.text, x, y);
+    x += ctx.measureText(p.text).width;
+  });
+}
+
+function exportPNG() {
+  const link = document.createElement('a');
+  const preset = document.querySelector('.preset-btn.active');
+  const name = preset ? preset.textContent : 'screenshot';
+  link.download = `voxtral-${name}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+async function exportAll() {
+  if (!currentImage) { alert('Load a screenshot first'); return; }
+  const status = document.getElementById('status');
+  for (let i = 0; i < presets.length; i++) {
+    const p = presets[i];
+    document.getElementById('headline').value = p.headline;
+    document.getElementById('subtext').value = p.subtext;
+    document.getElementById('bgMode').value = p.bg;
+    render();
+    status.textContent = `Exporting ${i + 1}/${presets.length}...`;
+    await new Promise(r => setTimeout(r, 150));
+    const link = document.createElement('a');
+    link.download = `voxtral-${p.id}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    await new Promise(r => setTimeout(r, 350));
+  }
+  status.textContent = 'Done!';
+}
+
+render();
+</script>
+</body>
+</html>

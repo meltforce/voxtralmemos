@@ -19,6 +19,10 @@ struct VoxtralMemosApp: App {
             let c = try ModelContainer(for: schema, configurations: [config])
 
             PromptTemplate.seedBuiltInTemplates(in: c.mainContext)
+            // Demo data disabled for release — uncomment for screenshots only
+            // #if DEBUG
+            // DemoDataSeeder.seedIfNeeded(in: c.mainContext)
+            // #endif
             container = c
             containerError = nil
         } catch {
