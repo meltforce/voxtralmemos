@@ -1,6 +1,5 @@
 import SwiftUI
 import SwiftData
-import StoreKit
 import VoxtralCore
 import os
 
@@ -9,7 +8,6 @@ private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.requestReview) private var requestReview
     @State private var apiKey: String = ""
     @State private var isKeyVisible = false
     @State private var isValidating = false
@@ -32,6 +30,7 @@ struct SettingsView: View {
     private static let contactEmail = URL(string: "mailto:voxtralmemos@meltforce.com")!
     private static let termsURL = URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!
     private static let mistralPricingURL = URL(string: "https://mistral.ai/pricing")!
+    private static let appStoreURL = URL(string: "https://apps.apple.com/app/id6759565503?action=write-review")!
 
     private let languages: [(code: String, name: String)] = [
         ("auto", "Auto-detect"),
@@ -214,9 +213,7 @@ struct SettingsView: View {
 
                 // About
                 Section("About") {
-                    Button {
-                        requestReview()
-                    } label: {
+                    Link(destination: Self.appStoreURL) {
                         Label("Rate the App", systemImage: "star.fill")
                     }
                     Link(destination: Self.contactEmail) {
@@ -287,6 +284,12 @@ struct SettingsView: View {
                 apiKey = keychainService.getAPIKey() ?? ""
                 await loadModels()
                 calculateStorage()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UserDefaults.didChangeNotification)) { _ in
+                let stored = UserDefaults.standard.string(forKey: "defaultActionTemplateId") ?? ""
+                if stored != defaultActionTemplateId {
+                    defaultActionTemplateId = stored
+                }
             }
         }
     }
