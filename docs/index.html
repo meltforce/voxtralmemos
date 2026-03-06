@@ -66,6 +66,59 @@
             height: 54px;
         }
 
+        /* Screenshots */
+        .screenshots-wrap {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+        .screenshots {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .screenshots::-webkit-scrollbar { display: none; }
+        .screenshots-inner {
+            display: flex;
+            gap: 1rem;
+            padding: 0.25rem 0.25rem 0.5rem;
+            width: max-content;
+        }
+        .screenshots-inner img {
+            width: 240px;
+            height: auto;
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+        .screenshots-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.9);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: #1d1d1f;
+            z-index: 1;
+            transition: opacity 0.2s;
+        }
+        .screenshots-btn:disabled { opacity: 0.25; cursor: default; }
+        .screenshots-btn.prev { left: -14px; }
+        .screenshots-btn.next { right: -14px; }
+        @media (prefers-color-scheme: dark) {
+            .screenshots-btn {
+                background: rgba(44,44,46,0.9);
+                color: #f5f5f7;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            }
+        }
+
         /* Features */
         .features {
             margin-bottom: 2.5rem;
@@ -117,13 +170,31 @@
         <p class="tagline">Powered by <a href="https://mistral.ai">Mistral AI</a> — Europe's leading AI company.</p>
     </div>
 
-    <!-- TODO: Replace href with actual App Store URL after launch -->
     <div class="download">
-        <a href="https://apps.apple.com/app/voxtral-memos/idXXXXXXXXXX">
+        <a href="https://apps.apple.com/us/app/voxtral-memos/id6759565503">
             <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
                  alt="Download on the App Store">
         </a>
     </div>
+
+    <div class="screenshots-wrap">
+        <button class="screenshots-btn prev" onclick="scrollScreenshots(-1)" aria-label="Previous">&#8249;</button>
+        <div class="screenshots" id="screenshotsTrack">
+            <div class="screenshots-inner">
+                <img src="/screenshots/01-recording-light.png" alt="Recording a voice memo">
+                <img src="/screenshots/03-transcript-light.png" alt="Transcript view">
+                <img src="/screenshots/04-summary-light.png" alt="Smart summary">
+                <img src="/screenshots/05-prompts-light.png" alt="Prompt templates">
+            </div>
+        </div>
+        <button class="screenshots-btn next" onclick="scrollScreenshots(1)" aria-label="Next">&#8250;</button>
+    </div>
+    <script>
+        function scrollScreenshots(dir) {
+            const track = document.getElementById('screenshotsTrack');
+            track.scrollBy({ left: dir * 190, behavior: 'smooth' });
+        }
+    </script>
 
     <div class="features">
         <div class="feature">
@@ -161,6 +232,8 @@
         <a href="/privacy/">Privacy Policy</a>
         <span class="sep">&middot;</span>
         <a href="/faq/">FAQ</a>
+        <span class="sep">&middot;</span>
+        <a href="/faq/#roadmap">Roadmap</a>
         <span class="sep">&middot;</span>
         <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>
     </footer>

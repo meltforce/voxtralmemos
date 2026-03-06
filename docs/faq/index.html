@@ -179,6 +179,13 @@
         </div>
     </details>
 
+    <details>
+        <summary>How do I cancel a recording without transcribing?</summary>
+        <div class="answer">
+            <p>Press the pause button to pause your recording — you can resume it at any time. While paused, a Discard button appears. Tapping it cancels the recording entirely, without saving or transcribing it.</p>
+        </div>
+    </details>
+
     <p class="section-title">Privacy & Data</p>
 
     <details>
@@ -238,6 +245,23 @@
         </div>
     </details>
 
+    <p class="section-title" id="roadmap">What's Next</p>
+
+    <details id="roadmap-details">
+        <summary>Are there plans for new features?</summary>
+        <div class="answer">
+            <p>Yes! Here are some ideas we're working on or thinking about:</p>
+            <ul>
+                <li><strong>iPad support</strong> — a native iPad layout</li>
+                <li><strong>Import audio files</strong> — transcribe recordings from other apps or your files library</li>
+                <li><strong>Shortcuts support</strong> — launch straight into recording mode from an Action Button or Shortcuts automation</li>
+                <li><strong>Lock Screen widget</strong> — start a recording directly from the Lock Screen</li>
+                <li><strong>Apple Watch app</strong> — start and stop recordings from your wrist, maybe someday</li>
+            </ul>
+            <p>No release dates yet — but these are on our radar.</p>
+        </div>
+    </details>
+
     <p class="section-title">Contact</p>
 
     <details>
@@ -255,5 +279,10 @@
         <a href="https://github.com/meltforce/voxtralmemos">GitHub</a>
     </footer>
 </main>
+<script>
+    if (window.location.hash === '#roadmap') {
+        document.getElementById('roadmap-details').open = true;
+    }
+</script>
 </body>
 </html>
