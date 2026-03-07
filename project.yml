@@ -35,8 +35,6 @@ targets:
       - VoxtralMemos
     dependencies:
       - package: VoxtralCore
-      - target: VoxtralMemosShareExtension
-        embed: true
     settings:
       base:
         MARKETING_VERSION: "1.1.0"
@@ -58,19 +56,9 @@ targets:
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - voxtral-memos
-
-  VoxtralMemosShareExtension:
-    type: app-extension
-    platform: iOS
-    sources:
-      - path: VoxtralMemosShareExtension
-        excludes:
-          - Info.plist
-    settings:
-      base:
-        MARKETING_VERSION: "1.1.0"
-        CURRENT_PROJECT_VERSION: "1"
-        PRODUCT_BUNDLE_IDENTIFIER: com.meltforce.voxtralmemos.share-extension
-        CODE_SIGN_ENTITLEMENTS: VoxtralMemosShareExtension/VoxtralMemosShareExtension.entitlements
-        TARGETED_DEVICE_FAMILY: "1"
-        INFOPLIST_FILE: VoxtralMemosShareExtension/Info.plist
+        LSSupportsOpeningDocumentsInPlace: false
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: "Audio"
+            LSHandlerRank: "Alternate"
+            LSItemContentTypes:
+              - "public.audio"

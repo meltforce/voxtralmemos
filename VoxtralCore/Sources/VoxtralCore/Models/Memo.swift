@@ -15,7 +15,7 @@ public final class Memo {
     public var language: String?
     public var status: MemoStatus
     public var errorMessage: String?
-    public var source: String
+    public var source: String?
     public var originalFileName: String?
     public var audioMimeType: String?
     @Relationship(deleteRule: .cascade, inverse: \MemoTransformation.memo)
@@ -30,7 +30,7 @@ public final class Memo {
         language: String? = nil,
         status: MemoStatus = .recording,
         errorMessage: String? = nil,
-        source: String = "recorded",
+        source: String? = "recorded",
         originalFileName: String? = nil,
         audioMimeType: String? = nil,
         transformations: [MemoTransformation] = []

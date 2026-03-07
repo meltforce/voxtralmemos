@@ -55,7 +55,6 @@ struct VoxtralMemosApp: App {
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     private let logger = Logger(subsystem: "com.meltforce.voxtralmemos", category: "ImportPickup")
@@ -69,75 +68,44 @@ struct ContentView: View {
             }
         }
         .onOpenURL { url in
-            guard url.scheme == "voxtral-memos", url.host == "import" else { return }
-            Task { await processPendingImports() }
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .active {
-                Task { await processPendingImports() }
-            }
+            guard url.isFileURL else { return }
+            Task { await importAudioFromURL(url) }
         }
     }
 
-    private func processPendingImports() async {
-        guard let groupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.com.meltforce.voxtralmemos") else { return }
-        let pendingDir = groupURL.appendingPathComponent("pendingImports", isDirectory: true)
-        guard FileManager.default.fileExists(atPath: pendingDir.path) else { return }
+    private func importAudioFromURL(_ url: URL) async {
+        let didAccess = url.startAccessingSecurityScopedResource()
+        defer { if didAccess { url.stopAccessingSecurityScopedResource() } }
 
-        let fm = FileManager.default
-        guard let files = try? fm.contentsOfDirectory(at: pendingDir, includingPropertiesForKeys: nil) else { return }
-        let manifests = files.filter { $0.pathExtension == "json" }
+        do {
+            let result = try await AudioImportService.validateAndPrepare(
+                url: url,
+                targetDirectory: Memo.audioDirectory
+            )
+            let memo = Memo(
+                duration: result.duration,
+                audioFileName: result.fileName,
+                status: .transcribing,
+                source: "imported",
+                originalFileName: url.lastPathComponent,
+                audioMimeType: result.mimeType
+            )
+            modelContext.insert(memo)
+            try? modelContext.save()
 
-        for manifestURL in manifests {
-            guard let data = try? Data(contentsOf: manifestURL),
-                  let manifest = try? JSONSerialization.jsonObject(with: data) as? [String: String],
-                  let fileName = manifest["fileName"] else {
-                try? fm.removeItem(at: manifestURL)
-                continue
-            }
-
-            let audioURL = pendingDir.appendingPathComponent(fileName)
-            guard fm.fileExists(atPath: audioURL.path) else {
-                try? fm.removeItem(at: manifestURL)
-                continue
-            }
-
-            let originalName = manifest["originalName"] ?? fileName
-
-            do {
-                let result = try await AudioImportService.validateAndPrepare(
-                    url: audioURL,
-                    targetDirectory: Memo.audioDirectory
-                )
-                let memo = Memo(
-                    duration: result.duration,
-                    audioFileName: result.fileName,
-                    status: .transcribing,
-                    source: "imported",
-                    originalFileName: originalName,
-                    audioMimeType: result.mimeType
-                )
-                modelContext.insert(memo)
-                try? modelContext.save()
-
-                let service = MistralDirectService()
-                let transcription = try await service.transcribe(
-                    audioFileURL: memo.audioFileURL,
-                    language: UserDefaults.standard.string(forKey: "transcriptionLanguage"),
-                    model: MistralDirectService.resolvedTranscriptionModel,
-                    mimeType: memo.audioMimeType
-                )
-                memo.transcript = transcription.text
-                memo.language = transcription.language
-                memo.status = .ready
-                try? modelContext.save()
-            } catch {
-                logger.error("Failed to import shared audio: \(error.localizedDescription)")
-            }
-
-            // Clean up pending files regardless of success/failure
-            try? fm.removeItem(at: audioURL)
-            try? fm.removeItem(at: manifestURL)
+            let service = MistralDirectService()
+            let transcription = try await service.transcribe(
+                audioFileURL: memo.audioFileURL,
+                language: UserDefaults.standard.string(forKey: "transcriptionLanguage"),
+                model: MistralDirectService.resolvedTranscriptionModel,
+                mimeType: memo.audioMimeType
+            )
+            memo.transcript = transcription.text
+            memo.language = transcription.language
+            memo.status = .ready
+            try? modelContext.save()
+        } catch {
+            logger.error("Failed to import audio from URL: \(error.localizedDescription)")
         }
     }
 }

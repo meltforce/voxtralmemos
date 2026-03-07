@@ -56,19 +56,7 @@ public enum AudioImportService {
         guard let session = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
             throw AudioImportError.conversionFailed("Cannot create export session.")
         }
-        session.outputURL = destination
-        session.outputFileType = .m4a
-        await session.export()
-        switch session.status {
-        case .completed:
-            return
-        case .failed:
-            throw AudioImportError.conversionFailed(session.error?.localizedDescription ?? "Unknown error")
-        case .cancelled:
-            throw AudioImportError.conversionFailed("Export was cancelled.")
-        default:
-            throw AudioImportError.conversionFailed("Unexpected export status: \(session.status.rawValue)")
-        }
+        try await session.export(to: destination, as: .m4a)
     }
 
     public static let defaultMaxDuration: TimeInterval = 60 * 60 // 60 minutes
