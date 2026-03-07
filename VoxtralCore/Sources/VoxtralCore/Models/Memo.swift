@@ -15,6 +15,9 @@ public final class Memo {
     public var language: String?
     public var status: MemoStatus
     public var errorMessage: String?
+    public var source: String
+    public var originalFileName: String?
+    public var audioMimeType: String?
     @Relationship(deleteRule: .cascade, inverse: \MemoTransformation.memo)
     public var transformations: [MemoTransformation]
 
@@ -27,6 +30,9 @@ public final class Memo {
         language: String? = nil,
         status: MemoStatus = .recording,
         errorMessage: String? = nil,
+        source: String = "recorded",
+        originalFileName: String? = nil,
+        audioMimeType: String? = nil,
         transformations: [MemoTransformation] = []
     ) {
         self.id = id
@@ -37,6 +43,9 @@ public final class Memo {
         self.language = language
         self.status = status
         self.errorMessage = errorMessage
+        self.source = source
+        self.originalFileName = originalFileName
+        self.audioMimeType = audioMimeType
         self.transformations = transformations
     }
 

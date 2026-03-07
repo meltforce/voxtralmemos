@@ -35,17 +35,42 @@ targets:
       - VoxtralMemos
     dependencies:
       - package: VoxtralCore
+      - target: VoxtralMemosShareExtension
+        embed: true
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         PRODUCT_BUNDLE_IDENTIFIER: com.meltforce.voxtralmemos
-        INFOPLIST_KEY_CFBundleDisplayName: "Voxtral Memos"
-        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Voxtral Memos needs microphone access to record voice memos."
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
-        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
-        INFOPLIST_KEY_UILaunchScreen_Generation: true
         TARGETED_DEVICE_FAMILY: "1"
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait"
         CODE_SIGN_ENTITLEMENTS: VoxtralMemos/VoxtralMemos.entitlements
+    info:
+      path: VoxtralMemos/Info.plist
+      properties:
+        CFBundleDisplayName: "Voxtral Memos"
+        NSMicrophoneUsageDescription: "Voxtral Memos needs microphone access to record voice memos."
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIApplicationSupportsIndirectInputEvents: true
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - voxtral-memos
+
+  VoxtralMemosShareExtension:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VoxtralMemosShareExtension
+        excludes:
+          - Info.plist
+    settings:
+      base:
+        MARKETING_VERSION: "1.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        PRODUCT_BUNDLE_IDENTIFIER: com.meltforce.voxtralmemos.share-extension
+        CODE_SIGN_ENTITLEMENTS: VoxtralMemosShareExtension/VoxtralMemosShareExtension.entitlements
+        TARGETED_DEVICE_FAMILY: "1"
+        INFOPLIST_FILE: VoxtralMemosShareExtension/Info.plist

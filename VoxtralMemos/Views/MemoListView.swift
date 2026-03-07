@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 import VoxtralCore
 import os
 
@@ -15,6 +16,8 @@ struct MemoListView: View {
     @State private var permissionGranted = false
     @State private var currentRecordingFileName: String?
     @State private var recordingError: String?
+    @State private var showFileImporter = false
+    @State private var importError: String?
 
     var body: some View {
         NavigationStack {
@@ -78,10 +81,21 @@ struct MemoListView: View {
             .navigationTitle("Memos")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showSettings = true } label: {
-                        Image(systemName: "gearshape")
+                    Menu {
+                        Button {
+                            showFileImporter = true
+                        } label: {
+                            Label("Import Audio", systemImage: "square.and.arrow.down")
+                        }
+                        Button {
+                            showSettings = true
+                        } label: {
+                            Label("Settings", systemImage: "gearshape")
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
                     }
-                    .accessibilityLabel("Settings")
+                    .accessibilityLabel("Menu")
                 }
             }
             .navigationDestination(for: UUID.self) { memoId in
@@ -108,6 +122,27 @@ struct MemoListView: View {
                 Button("OK") { recordingError = nil }
             } message: {
                 Text(recordingError ?? "An unknown error occurred.")
+            }
+            .alert("Import Error", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK") { importError = nil }
+            } message: {
+                Text(importError ?? "An unknown error occurred.")
+            }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: [.audio],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    guard let url = urls.first else { return }
+                    Task { await importAudioFile(url: url) }
+                case .failure(let error):
+                    importError = error.localizedDescription
+                }
             }
         }
     }
@@ -223,10 +258,37 @@ struct MemoListView: View {
         }
     }
 
+    private func importAudioFile(url: URL) async {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+
+        do {
+            let originalName = url.lastPathComponent
+            let result = try await AudioImportService.validateAndPrepare(
+                url: url,
+                targetDirectory: Memo.audioDirectory
+            )
+            let memo = Memo(
+                duration: result.duration,
+                audioFileName: result.fileName,
+                status: .transcribing,
+                source: "imported",
+                originalFileName: originalName,
+                audioMimeType: result.mimeType
+            )
+            modelContext.insert(memo)
+            modelContext.loggedSave()
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            await transcribeMemo(memo)
+        } catch {
+            importError = error.localizedDescription
+        }
+    }
+
     private func transcribeMemo(_ memo: Memo) async {
         let service = MistralDirectService()
         do {
-            let result = try await service.transcribe(audioFileURL: memo.audioFileURL, language: UserDefaults.standard.string(forKey: "transcriptionLanguage"), model: MistralDirectService.resolvedTranscriptionModel)
+            let result = try await service.transcribe(audioFileURL: memo.audioFileURL, language: UserDefaults.standard.string(forKey: "transcriptionLanguage"), model: MistralDirectService.resolvedTranscriptionModel, mimeType: memo.audioMimeType)
             memo.transcript = result.text
             memo.language = result.language
             memo.status = .ready

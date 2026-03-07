@@ -40,7 +40,7 @@ public struct MistralModel: Identifiable, Sendable {
 }
 
 public protocol TranscriptionService: Sendable {
-    func transcribe(audioFileURL: URL, language: String?, model: String) async throws -> TranscriptionResult
+    func transcribe(audioFileURL: URL, language: String?, model: String, mimeType: String?) async throws -> TranscriptionResult
     func runPrompt(transcript: String, systemPrompt: String, model: String) async throws -> String
     func listModels() async throws -> [MistralModel]
     func listTranscriptionModels() async throws -> [MistralModel]

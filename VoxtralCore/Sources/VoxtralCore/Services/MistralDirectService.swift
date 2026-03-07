@@ -108,7 +108,7 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
     // MARK: - Transcription
 
-    public func transcribe(audioFileURL: URL, language: String?, model: String = "voxtral-mini-latest") async throws -> TranscriptionResult {
+    public func transcribe(audioFileURL: URL, language: String?, model: String = "voxtral-mini-latest", mimeType: String? = nil) async throws -> TranscriptionResult {
         let key = try apiKey
         let boundary = UUID().uuidString
 
@@ -130,7 +130,8 @@ public final class MistralDirectService: TranscriptionService, @unchecked Sendab
 
         // audio file
         let filename = audioFileURL.lastPathComponent
-        body.appendMultipartFile(boundary: boundary, name: "file", filename: filename, mimeType: "audio/mp4", data: audioData)
+        let resolvedMime = mimeType ?? AudioImportService.mimeType(for: audioFileURL.pathExtension)
+        body.appendMultipartFile(boundary: boundary, name: "file", filename: filename, mimeType: resolvedMime, data: audioData)
 
         // closing boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
