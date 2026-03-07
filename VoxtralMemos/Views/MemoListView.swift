@@ -454,59 +454,15 @@ struct MemoRowView: View {
 
 struct StatusBadgeView: View {
     let memo: Memo
-    @State private var phase = 0
-    @State private var timer: Timer?
-
-    private var label: String {
-        switch phase {
-        case 0: "Uploading"
-        case 1: "Waiting"
-        default: "Processing"
-        }
-    }
-
-    private var icon: String {
-        switch phase {
-        case 0: "arrow.up.circle"
-        case 1: "hourglass"
-        default: "gear"
-        }
-    }
-
-    private var tint: Color {
-        switch phase {
-        case 0: .blue
-        case 1: .orange
-        default: .purple
-        }
-    }
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.caption2)
-            Text(label)
+            ProgressView()
+                .controlSize(.mini)
+            Text("Transcribing")
                 .font(.caption2)
                 .fontWeight(.medium)
         }
-        .foregroundStyle(tint)
-        .contentTransition(.interpolate)
-        .animation(.easeInOut(duration: 0.3), value: phase)
-        .onAppear { startTimer() }
-        .onDisappear { stopTimer() }
-    }
-
-    private func startTimer() {
-        phase = 0
-        timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { _ in
-            Task { @MainActor in
-                if phase < 2 { phase += 1 }
-            }
-        }
-    }
-
-    private func stopTimer() {
-        timer?.invalidate()
-        timer = nil
+        .foregroundStyle(.teal)
     }
 }
