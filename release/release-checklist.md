@@ -1,4 +1,34 @@
-# Release Checklist — Voxtral Memos 1.0
+# Release Checklist — Voxtral Memos 1.1
+
+## App Store Connect — Metadata
+- [ ] What's New text updated for 1.1 (see `app-store-description.md`)
+- [ ] Screenshots updated if needed (new import feature)
+
+## App Review
+- [ ] Review notes updated to mention audio import feature
+- [ ] Temporary Mistral API key created for reviewer
+- [ ] API key has credit loaded ($1+ sufficient)
+- [ ] Demo instructions verified by testing yourself
+
+## Build & Submit
+- [ ] MARKETING_VERSION = 1.1.0
+- [ ] CURRENT_PROJECT_VERSION incremented (must be higher than last upload)
+- [ ] Archive built with Release configuration
+- [ ] Archive uploaded to App Store Connect
+- [ ] Internal TestFlight smoke-test passed
+- [ ] Submitted for App Store Review
+
+## Website
+- [ ] FAQ roadmap updated (audio import marked as shipped)
+- [ ] Any new FAQ entries for import feature
+
+## Post-Launch
+- [ ] Verify update appears on App Store
+- [ ] Social media / Discord announcement (see `discord-post.md`)
+
+---
+
+# Release Checklist — Voxtral Memos 1.0 (completed)
 
 ## App Store Connect — Metadata
 - [x] App name "Voxtral Memos" registered in App Store Connect
@@ -16,7 +46,6 @@
 - [x] iPhone 6.9" screenshots (min 3, see `screenshot-specs.md`)
 - [x] iPhone 6.3" screenshots (auto-scaled from 6.9")
 - [x] iPad 13" screenshots — N/A, app is iPhone-only
-- [ ] Optional: App Preview video (max 30 sec)
 
 ## App Review
 - [x] Review notes written (see `review-notes.md`)
@@ -31,19 +60,6 @@
 - [x] IDFA declaration: No
 - [x] Privacy policy live at https://voxtralmemos.meltforce.org/privacy/
 
-## In-App Purchases
-- [ ] Tip Jar products created in App Store Connect (post-launch)
-  - [ ] com.meltforce.voxtralmemos.tip.small ($0.99)
-  - [ ] com.meltforce.voxtralmemos.tip.medium ($4.99)
-  - [ ] com.meltforce.voxtralmemos.tip.large ($9.99)
-- [ ] Products approved / "Ready to Submit"
-
-## Website
-- [x] Homepage updated (beta banner removed, App Store badge added)
-- [x] FAQ page live at /faq/
-- [x] Privacy policy live at /privacy/
-- [ ] Beta page removed or redirected
-
 ## Build & Submit
 - [x] MARKETING_VERSION = 1.0.0
 - [x] CURRENT_PROJECT_VERSION incremented
@@ -52,15 +68,7 @@
 - [x] Internal TestFlight smoke-test passed
 - [x] Submitted for App Store Review
 
-## Blockers before submission
-- [x] Restrict build to iPhone-only (remove iPad support in project.yml, TARGETED_DEVICE_FAMILY = 1)
-- [x] Answer age rating questions in App-Informationen (4+)
-- [x] Set pricing (Free) under "Preis"
-- [x] Set content rights in App-Informationen (no third-party content)
-- [x] Re-archive and upload after iPhone-only fix
-
-## Post-Launch
-- [ ] Verify app appears on App Store
-- [ ] Update App Store badge link on website with actual URL
-- [ ] Social media announcement
-- [ ] Remove/archive beta testing materials
+## Website
+- [x] Homepage updated (beta banner removed, App Store badge added)
+- [x] FAQ page live at /faq/
+- [x] Privacy policy live at /privacy/

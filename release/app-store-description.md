@@ -46,6 +46,13 @@ REQUIREMENTS
 
 ---
 
+## What's New (Version 1.1)
+
+Audio File Import
+Import audio files into Voxtral Memos from any app via the Share Sheet — just tap "Transcribe with Voxtral" in the share actions. Imported files are automatically transcribed using your configured Voxtral model.
+
+You can also import audio files using the in-app file picker from the memo list.
+
 ## What's New (Version 1.0)
 Initial release.
 
