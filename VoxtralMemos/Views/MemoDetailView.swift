@@ -347,6 +347,7 @@ struct MemoDetailView: View {
         if let cached = memo.transformations.first(where: { $0.template?.id == template.id }) {
             // Cache hit — just mark it as the active one
             cached.selectedAt = Date()
+            selectedTab = 1
             modelContext.loggedSave()
             return
         }
@@ -360,6 +361,7 @@ struct MemoDetailView: View {
             template: template
         )
         modelContext.insert(transformation)
+        selectedTab = 1
         modelContext.loggedSave()
 
         Task {
