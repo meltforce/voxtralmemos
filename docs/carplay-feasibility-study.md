@@ -40,14 +40,49 @@ Der Use-Case ist: "Ich sitze im Auto, habe eine Idee, und will schnell eine Aufn
 
 ## Technische Umsetzung
 
-### 1. Apple CarPlay Entitlement
+### 1. Apple CarPlay Entitlement beantragen
 
 **Voraussetzung:** CarPlay-Entitlement muss bei Apple beantragt werden.
+Ohne dieses Entitlement kann die App nicht auf CarPlay erscheinen.
 
-- Formular: https://developer.apple.com/carplay/
-- Kategorie: Am besten als **Audio-App** beantragen
-- Wartezeit: Typisch 1–2 Wochen
-- Ohne dieses Entitlement kann die App nicht auf CarPlay erscheinen
+> **Wichtig:** Das ist NICHT in App Store Connect, sondern ein separates Formular
+> im Apple Developer Portal.
+
+#### Schritt-für-Schritt:
+
+1. **Antragsformular öffnen:**
+   https://developer.apple.com/contact/carplay/
+
+2. **Einloggen** mit dem Apple Developer Account.
+   Muss vom **Account Holder / Agent** gemacht werden (nicht von Admins oder Members).
+
+3. **Formular ausfüllen:**
+   - **App Name:** Voxtral Memos
+   - **App Category:** "Audio" auswählen
+   - **App Description:** Empfohlener Text:
+     > "Voxtral Memos is a privacy-focused voice memo app that records spoken
+     > notes and transcribes them using AI. The CarPlay integration allows
+     > drivers to quickly capture voice memos hands-free while driving.
+     > The interface is minimal: a single button to start/stop recording.
+     > After stopping, the memo is automatically transcribed in the background."
+   - **CarPlay Entitlement Addendum** akzeptieren (Nutzungsbedingungen)
+
+4. **Absenden und warten:**
+   - Apple prüft den Antrag manuell
+   - Typische Wartezeit: **1–2 Wochen** (kann variieren)
+   - Bei Ablehnung: ggf. als "Communication"-App neu beantragen
+
+5. **Nach Genehmigung:**
+   - Im Apple Developer Portal unter **Certificates, Identifiers & Profiles**
+   - Die App ID `com.meltforce.voxtralmemos` bearbeiten
+   - **CarPlay Audio** Capability aktivieren (erscheint erst nach Genehmigung)
+   - Neues **Provisioning Profile** erstellen, das das CarPlay-Entitlement enthält
+   - Profil in Xcode herunterladen / automatisches Signing neu laden
+
+#### Referenzen:
+
+- [Requesting CarPlay Entitlements – Apple Developer Documentation](https://developer.apple.com/documentation/carplay/requesting-carplay-entitlements)
+- [CarPlay Developer Guide (PDF, Feb 2026)](https://developer.apple.com/download/files/CarPlay-Developer-Guide.pdf)
 
 ### 2. Neue Dateien
 
