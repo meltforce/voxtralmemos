@@ -51,8 +51,15 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleDisplayName: "Voxtral Memos"
         NSMicrophoneUsageDescription: "Voxtral Memos needs microphone access to record voice memos."
+        UIBackgroundModes:
+          - audio
         UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
+          UIApplicationSupportsMultipleScenes: true
+          UISceneConfigurations:
+            CPTemplateApplicationSceneSessionRoleApplication:
+              - UISceneClassName: CPTemplateApplicationScene
+                UISceneDelegateClassName: "$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate"
+                UISceneConfigurationName: CarPlay
         UIApplicationSupportsIndirectInputEvents: true
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:

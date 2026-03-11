@@ -10,25 +10,13 @@ struct VoxtralMemosApp: App {
     let containerError: String?
 
     init() {
-        do {
-            let schema = Schema([
-                Memo.self,
-                PromptTemplate.self,
-                MemoTransformation.self
-            ])
-            let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-            let c = try ModelContainer(for: schema, configurations: [config])
-
-            PromptTemplate.seedBuiltInTemplates(in: c.mainContext)
-            // Demo data disabled for release — uncomment for screenshots only
-            // #if DEBUG
-            // DemoDataSeeder.seedIfNeeded(in: c.mainContext)
-            // #endif
-            container = c
+        // Use the shared container so CarPlay scene can access the same data
+        if let shared = SharedModelContainer.shared {
+            container = shared
             containerError = nil
-        } catch {
+        } else {
             container = nil
-            containerError = error.localizedDescription
+            containerError = "Failed to initialize the database."
         }
     }
 
