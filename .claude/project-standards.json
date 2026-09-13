@@ -1,0 +1,22 @@
+{
+  "standard": "2026-09-02",
+  "type": "code",
+  "modules": [
+    "doc-contract",
+    "incidents",
+    "specs",
+    "language-en",
+    "git-solo",
+    "skills",
+    "settings",
+    "verification",
+    "check-docs"
+  ],
+  "declined": {
+    "policy": "CLAUDE.md is under 150 lines, so a STANDARDS.md would split mechanics from policy before the two are hard to tell apart. Select it when CLAUDE.md grows past that."
+  },
+  "notes": {
+    "git-solo": "Adapted: the long-lived branch is master, not main, because the public repo's App Store, GitHub Pages and documentation links resolve against that name. External pull requests are still accepted. See DECISIONS.md, 2026-09-13.",
+    "settings": "Applied for .mcp.json and enabledMcpjsonServers only. The block's allow/deny pair is deliberately unwritten — a permission grant is its own decision, tracked as an open ROADMAP row."
+  }
+}

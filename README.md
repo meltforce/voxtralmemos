@@ -51,6 +51,25 @@ VoxtralMemos/
 └── project.yml            # XcodeGen spec
 ```
 
+## What runs outside this checkout
+
+- **The App Store build.** Submission and review are driven from
+  `release/`; `release/release-checklist.md` is the running checklist.
+- **The homepage** at https://voxtralmemos.meltforce.org/ is served by GitHub
+  Pages from `docs/`. The DNS record pointing the hostname at
+  `meltforce.github.io` lives in the homelab repo, not here — see
+  [`CLAUDE.md`](CLAUDE.md) § Gotchas.
+
+## Documents
+
+| File | Holds |
+|---|---|
+| [`CLAUDE.md`](CLAUDE.md) | Conventions and gotchas for working in this repo. |
+| [`ROADMAP.md`](ROADMAP.md) | Open work. |
+| [`DECISIONS.md`](DECISIONS.md) | Decisions taken, with reasoning. |
+| [`INCIDENTS.md`](INCIDENTS.md) | Postmortems. |
+| [`tasks/`](tasks/) | Full specs for open roadmap items. |
+
 ## License
 
 [MIT](LICENSE)

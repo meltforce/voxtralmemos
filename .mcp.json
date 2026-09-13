@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "xcode": {
+      "type": "stdio",
+      "command": "xcrun",
+      "args": ["mcpbridge"],
+      "env": {}
+    },
+    "apple-deep-docs": {
+      "type": "stdio",
+      "command": "${HOME}/.claude/mcp-servers/appledeepdoc-mcp/run.sh",
+      "args": [],
+      "env": {}
+    }
+  }
+}
