@@ -14,6 +14,38 @@ place with the old form recorded under revisions — the entry is not duplicated
 
 ---
 
+## 2026-09-13 — `check-docs.sh --all` is red until the German UI strings are translated
+
+**Decided:** 2026-09-13
+
+**Decision.** The language sweep covers `*.swift` and currently reports fourteen
+hits across `CarPlaySceneDelegate.swift` and `PromptTemplate.swift`. Those hits
+stay. They are not suppressed in `tools/check-docs.allow`, and the check is not
+treated as passing until the two translation rows in [`ROADMAP.md`](ROADMAP.md)
+close.
+
+**Reasoning.** The sweep did not cover Swift, so it reported green on a Swift
+project while German shipped to users in the built-in prompt templates. `*.swift`
+was added to the sweep in the standards repo, `1422298`, because the script is
+copied between projects unchanged and a local edit would drift from its source.
+Suppressing the resulting hits would restore exactly the green-on-nothing state
+that made the gap invisible in the first place.
+
+**Alternative considered.** Allowlist entries carrying a "remove when translated"
+comment, so the check reads green in the meantime. Rejected: a suppression that
+depends on someone remembering to remove it is a suppression that outlives its
+reason, and the roadmap rows already carry the work.
+
+**Trigger to re-open.** Both translation rows close, at which point the check
+should return to exit 0 and can be wired into a pre-commit hook or CI.
+
+**Note on scope.** Only three entries in `tools/check-docs.allow` suppress
+anything: the sample transcripts in `DemoDataSeeder.swift`, which demonstrate
+multilingual transcription on purpose, and two English "falls back" lines that
+the sweep's function-word list cannot tell from the German article.
+
+---
+
 ## 2026-09-13 — Open work is tracked in the repo, not in Plane
 
 **Decided:** 2026-09-13

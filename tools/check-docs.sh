@@ -191,7 +191,7 @@ sweep() {
          -o -name .venv -o -name venv -o -name site-packages \
          -o -name ansible_collections \) -prune -o \
       \( -name '*.md' -o -name '*.sh' -o -name '*.py' -o -name '*.go' \
-         -o -name '*.ts' -o -name '*.js' -o -name '*.rs' \
+         -o -name '*.ts' -o -name '*.js' -o -name '*.rs' -o -name '*.swift' \
          -o -name '*.yml' -o -name '*.yaml' -o -name '*.j2' \
          -o -name 'Dockerfile*' -o -name '*.json' \) -type f -print0 \
     | xargs -0 grep -InE "$pattern" 2>/dev/null \

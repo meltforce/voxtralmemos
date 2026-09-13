@@ -36,3 +36,7 @@ CLAUDE.md%%("Rolle" in the text
 VoxtralMemos/DemoDataSeeder.swift%%transcript:
 VoxtralMemos/DemoDataSeeder.swift%%- [ ]
 VoxtralMemos/DemoDataSeeder.swift%%- **
+
+# "falls back" — the English verb, named as a known false positive at the top of
+# this file. Per line, as that note requires.
+VoxtralCore/Sources/VoxtralCore/Services/MistralDirectService.swift%%otherwise falls back to the default

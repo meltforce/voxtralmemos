@@ -33,10 +33,9 @@ each becomes its own `[open]` row before the entry is moved out.
 |---|---|---|---|---|
 | `[open]` | Add an Uptime Kuma monitor for `voxtralmemos.meltforce.org` | homelab, `configuration/uptimekuma/group_vars/all.yml` | | The homepage is the support URL filed with App Review, and an outage is currently not reported. homelab `STANDARDS.md` § *Monitoring coverage* requires the monitor. |
 | `[open]` | Decide the permission policy for `.claude/settings.json` | `.claude/settings.json` | | The settings block requires `allow` and `deny` together. Writing them is a permission grant and belongs in its own decision, not in a structural alignment. |
-| `[open]` | Add `*.swift` to the language sweep in the standards repo | `claude-project-standards`, `tools/check-docs.sh` | | The sweep's `find` list covers md, sh, py, go, ts, js, rs, yml, yaml, j2, Dockerfile and json — not Swift. In this repo that means the check reports green while three Swift files carry German. Fix belongs in the standards repo, because the script is copied between projects unchanged. |
 
 ## Product
 
 | Status | Item | Where | Trigger | Notes |
 |---|---|---|---|---|
-| `[open]` | Translate the default prompt templates | `VoxtralCore/Sources/VoxtralCore/Models/PromptTemplate.swift` | | The built-in templates ship German prompt text (lines 60 and 63) in an app whose App Store listing is en-us. Every user gets German defaults regardless of device language. |
+| `[open]` | Translate the default prompt templates | `VoxtralCore/Sources/VoxtralCore/Models/PromptTemplate.swift` | | All three built-in templates are German, lines 58-67 — the names shown in the UI (`Zusammenfassung`, `Aufgabenliste`, `Tagebucheintrag`) and the prompt text sent to the model. The App Store listing is en-us and the app localizes nothing, so every user gets German defaults regardless of device language. |
