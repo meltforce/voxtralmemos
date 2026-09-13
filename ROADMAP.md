@@ -27,6 +27,15 @@ each becomes its own `[open]` row before the entry is moved out.
 | `[open]` | Complete the CarPlay recording UI | `VoxtralMemos/CarPlay/` | Entitlement granted | `CarPlaySceneDelegate` carries a one-tap recording stub. Spec in [`tasks/carplay.md`](tasks/carplay.md). |
 | `[open]` | Replace the hardcoded German UI strings in the CarPlay scene | `VoxtralMemos/CarPlay/CarPlaySceneDelegate.swift` | | Lines 46-47 and 174-187 carry German labels. The App Store listing is en-us and the app localizes nothing else, so a CarPlay user sees German in an otherwise English app. |
 
+## Transcription keyboard
+
+| Status | Item | Where | Trigger | Notes |
+|---|---|---|---|---|
+| `[open]` | Spike: prove microphone recording inside a keyboard extension | [`tasks/keyboard.md`](tasks/keyboard.md) § 0 | | Apple's documentation names no microphone API for custom keyboards. The path via `RequestsOpenAccess` and `hasDictationKey` comes from an Apple reply in the developer forums whose thread carries an open bug report, `FB16791704`, April 2025. Half a day, and it gates every other row here. |
+| `[open]` | Share the API key through a keychain access group | `VoxtralCore/Sources/VoxtralCore/Services/KeychainService.swift` | Spike passes | The queries carry no access group since [`INCIDENTS.md`](INCIDENTS.md), 2026-03-07, so an extension cannot read the key. The fix is a `keychain-access-groups` entitlement, which is a different entitlement from the app group that caused that incident. Spec § 3. |
+| `[open]` | Move the transcription settings into the app group defaults suite | `VoxtralCore/Sources/VoxtralCore/Services/MistralDirectService.swift`, `VoxtralMemos/Views/SettingsView.swift` | Spike passes | `resolvedTranscriptionModel` reads `UserDefaults.standard`, which in an extension is the extension's own domain, so the model and language chosen in the app would not reach the keyboard. Spec § 4. |
+| `[open]` | Build the transcription keyboard | `VoxtralMemosKeyboard/` | Spike passes | Recording, transcription and insertion at the cursor, plus the typing layer that App Review guideline 4.4.1 requires. Estimated at 8.5 developer days; spec in [`tasks/keyboard.md`](tasks/keyboard.md). |
+
 ## Infrastructure
 
 | Status | Item | Where | Trigger | Notes |

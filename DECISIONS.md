@@ -14,6 +14,38 @@ place with the old form recorded under revisions — the entry is not duplicated
 
 ---
 
+## 2026-09-13 — The transcription keyboard records in the keyboard, and carries a typing layer
+
+**Decided:** 2026-09-13
+
+**Decision.** The planned transcription keyboard records through the microphone
+inside the extension, transcribes through the Mistral endpoint and inserts the
+text at the cursor. It ships with a compact QWERTY typing layer. The design in
+which the keyboard opens the containing app, the app records, and the keyboard
+reads the result from the app group container is rejected. If the spike in
+[`tasks/keyboard.md`](tasks/keyboard.md) § 0 shows that the microphone is
+unreachable from a keyboard extension, the feature is dropped rather than
+redesigned.
+
+**Reasoning.** App Review guideline 4.4.1 states that a keyboard extension must
+not launch other apps besides Settings, which is exactly what the rejected
+design requires on every dictation. The same guideline requires keyboard input
+functionality with typed characters and functionality without full access; a
+microphone-only surface provides neither, because without full access the
+keyboard has no network and no microphone. The typing layer therefore belongs to
+the minimum scope and accounts for 2 of the estimated 8.5 developer days.
+
+**Alternative considered.** The trigger design, at an estimated 1.5 to 2 days
+and without the keychain and open-access work. Rejected on 4.4.1 above; its user
+experience also requires a manual switch back to the host app, because iOS
+offers no programmatic return.
+
+**Trigger to re-open.** A documented dictation API for keyboard extensions, a
+change to 4.4.1, or a refusal in review that names the recording rather than the
+typing layer.
+
+---
+
 ## 2026-09-13 — `check-docs.sh --all` is red until the German UI strings are translated
 
 **Decided:** 2026-09-13
